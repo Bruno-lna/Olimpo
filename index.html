@@ -1217,7 +1217,10 @@ window.doLogout = function() {
   showPage('home', document.getElementById('nav-home'));
 };
 
+let _registering = false;
 window.doRegister = async function() {
+  if (_registering) return;
+
   const nome       = (document.getElementById('reg-nome').value       || '').trim();
   const whatsapp   = (document.getElementById('reg-whatsapp').value   || '').trim();
   const login      = (document.getElementById('reg-login').value      || '').trim();
@@ -1237,28 +1240,37 @@ window.doRegister = async function() {
     toast('Este login já está em uso', 'error'); return;
   }
 
-  const senhaHash = await hashPassword(senha);
-  const cargo = users.length === 0 ? 'Líder' : 'Recruta';
-  const user  = { id: Date.now().toString(), nome, whatsapp, personagens, login, senhaHash, cargo, createdAt: Date.now() };
+  _registering = true;
+  const btn = document.querySelector('#page-cadastro .btn-gold');
+  if (btn) { btn.disabled = true; btn.textContent = 'Cadastrando...'; }
 
-  if (db) {
-    await dbSet('users/' + user.id, user);
-  } else {
-    users.push(user);
-    lsSaveUsers();
-    renderMembers();
-    updateHomeStats();
+  try {
+    const senhaHash = await hashPassword(senha);
+    const cargo = users.length === 0 ? 'Líder' : 'Recruta';
+    const user  = { id: Date.now().toString(), nome, whatsapp, personagens, login, senhaHash, cargo, createdAt: Date.now() };
+
+    if (db) {
+      await dbSet('users/' + user.id, user);
+    } else {
+      users.push(user);
+      lsSaveUsers();
+      renderMembers();
+      updateHomeStats();
+    }
+
+    currentUser = user;
+    localStorage.setItem(LS_SESSION, JSON.stringify(user));
+    updateNavbar();
+    toast(`Cadastro realizado! Bem-vindo, ${personagens[0]?.personagem || nome}!`, 'success');
+    ['reg-nome','reg-whatsapp','reg-login','reg-senha','reg-senha2'].forEach(id => {
+      const el = document.getElementById(id); if (el) el.value = '';
+    });
+    initCharRows('reg', [{}]);
+    showPage('home', document.getElementById('nav-home'));
+  } finally {
+    _registering = false;
+    if (btn) { btn.disabled = false; btn.textContent = 'Criar conta'; }
   }
-
-  currentUser = user;
-  localStorage.setItem(LS_SESSION, JSON.stringify(user));
-  updateNavbar();
-  toast(`Cadastro realizado! Bem-vindo, ${personagem}!`, 'success');
-  ['reg-nome','reg-whatsapp','reg-login','reg-senha','reg-senha2'].forEach(id => {
-    const el = document.getElementById(id); if (el) el.value = '';
-  });
-  initCharRows('reg', [{}]);
-  showPage('home', document.getElementById('nav-home'));
 };
 
 window.saveProfile = async function() {
