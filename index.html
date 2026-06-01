@@ -1,0 +1,1282 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Clã Olimpo — NightPT</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cinzel:wght@400;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --gold:        #c9a227;
+  --gold-light:  #f0c84a;
+  --gold-dark:   #8a6d0b;
+  --dark:        #08070A;
+  --dark2:       #110f16;
+  --dark3:       #1a1723;
+  --panel:       #13111a;
+  --border:      #2e2840;
+  --text:        #e8d9a0;
+  --text-dim:    #9e8e6a;
+  --red:         #c0392b;
+  --red-light:   #e74c3c;
+  --green:       #27ae60;
+  --green-light: #2ecc71;
+  --radius:      8px;
+  --shadow:      0 4px 24px rgba(0,0,0,0.7);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--dark);
+  color: var(--text);
+  font-family: 'Crimson Text', Georgia, serif;
+  font-size: 18px;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--dark2); }
+::-webkit-scrollbar-thumb { background: var(--gold-dark); border-radius: 3px; }
+
+/* ── NAVBAR ── */
+nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  background: linear-gradient(180deg, rgba(8,7,10,0.98) 0%, rgba(17,15,22,0.95) 100%);
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2rem;
+  height: 60px;
+  box-shadow: 0 2px 20px rgba(0,0,0,0.8);
+}
+
+.nav-brand {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 1.1rem;
+  color: var(--gold);
+  text-shadow: 0 0 12px rgba(201,162,39,0.5);
+  letter-spacing: 2px;
+  cursor: pointer;
+}
+
+.nav-links {
+  display: flex;
+  gap: 0.25rem;
+  list-style: none;
+}
+
+.nav-links a {
+  display: block;
+  padding: 0.4rem 1rem;
+  font-family: 'Cinzel', serif;
+  font-size: 0.78rem;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  text-decoration: none;
+  border-radius: var(--radius);
+  transition: color 0.2s, background 0.2s;
+}
+
+.nav-links a:hover,
+.nav-links a.active {
+  color: var(--gold-light);
+  background: rgba(201,162,39,0.08);
+}
+
+.nav-links a.active {
+  color: var(--gold);
+  border-bottom: 2px solid var(--gold);
+  border-radius: 0;
+}
+
+/* ── PAGES ── */
+.page {
+  display: none;
+  min-height: 100vh;
+  padding-top: 60px;
+}
+.page.active { display: block; }
+
+/* ── HOME ── */
+#page-home {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% 0%, rgba(201,162,39,0.07) 0%, transparent 70%),
+    var(--dark);
+}
+#page-home.active {
+  display: flex;
+}
+
+.home-inner {
+  max-width: 720px;
+  padding: 4rem 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+}
+
+.home-logo {
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  border: 3px solid var(--gold-dark);
+  box-shadow: 0 0 40px rgba(201,162,39,0.3), 0 0 80px rgba(201,162,39,0.1);
+  object-fit: cover;
+}
+
+.home-logo-placeholder {
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  border: 3px solid var(--gold-dark);
+  box-shadow: 0 0 40px rgba(201,162,39,0.3);
+  background: var(--dark2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 4rem;
+}
+
+.home-title {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: clamp(2rem, 6vw, 3.5rem);
+  color: var(--gold);
+  text-shadow: 0 0 30px rgba(201,162,39,0.6), 0 2px 4px rgba(0,0,0,0.8);
+  line-height: 1.2;
+}
+
+.home-subtitle {
+  font-family: 'Cinzel', serif;
+  font-size: 0.9rem;
+  letter-spacing: 4px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+
+.divider {
+  width: 120px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+}
+
+.home-desc {
+  font-size: 1.1rem;
+  color: var(--text-dim);
+  line-height: 1.8;
+  max-width: 520px;
+}
+
+.stats-row {
+  display: flex;
+  gap: 2rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.stat-box {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.2rem 2rem;
+  min-width: 120px;
+  text-align: center;
+}
+
+.stat-value {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 1.8rem;
+  color: var(--gold);
+  line-height: 1;
+}
+
+.stat-label {
+  font-family: 'Cinzel', serif;
+  font-size: 0.65rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-top: 0.3rem;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.7rem 1.8rem;
+  border-radius: var(--radius);
+  font-family: 'Cinzel', serif;
+  font-size: 0.8rem;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s;
+  text-decoration: none;
+}
+
+.btn-gold {
+  background: linear-gradient(135deg, var(--gold-dark), var(--gold));
+  color: var(--dark);
+  font-weight: 700;
+  box-shadow: 0 0 20px rgba(201,162,39,0.3);
+}
+.btn-gold:hover {
+  background: linear-gradient(135deg, var(--gold), var(--gold-light));
+  box-shadow: 0 0 30px rgba(201,162,39,0.5);
+  transform: translateY(-1px);
+}
+
+.btn-outline {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+}
+.btn-outline:hover {
+  border-color: var(--gold-dark);
+  color: var(--gold);
+  background: rgba(201,162,39,0.05);
+}
+
+.btn-danger {
+  background: transparent;
+  border: 1px solid var(--red);
+  color: var(--red-light);
+  font-size: 0.75rem;
+  padding: 0.4rem 0.8rem;
+}
+.btn-danger:hover {
+  background: rgba(192,57,43,0.1);
+}
+
+.btn-sm {
+  padding: 0.35rem 0.8rem;
+  font-size: 0.7rem;
+}
+
+/* ── SECTION HEADER ── */
+.section-wrap {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 3rem 1.5rem;
+}
+
+.section-header {
+  text-align: center;
+  margin-bottom: 2.5rem;
+}
+
+.section-title {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 1.6rem;
+  color: var(--gold);
+  text-shadow: 0 0 20px rgba(201,162,39,0.3);
+  margin-bottom: 0.5rem;
+}
+
+.section-sub {
+  font-family: 'Cinzel', serif;
+  font-size: 0.7rem;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+/* ── MEMBERS PAGE ── */
+.members-toolbar {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.search-box {
+  flex: 1;
+  min-width: 200px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.6rem 1rem;
+  color: var(--text);
+  font-family: 'Crimson Text', serif;
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.search-box:focus { border-color: var(--gold-dark); }
+.search-box::placeholder { color: var(--text-dim); }
+
+.member-form-panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  display: none;
+}
+.member-form-panel.open { display: block; }
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.form-label {
+  font-family: 'Cinzel', serif;
+  font-size: 0.65rem;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.form-input, .form-select {
+  background: var(--dark2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.5rem 0.8rem;
+  color: var(--text);
+  font-family: 'Crimson Text', serif;
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.form-input:focus, .form-select:focus { border-color: var(--gold-dark); }
+.form-select option { background: var(--dark2); }
+
+.members-table-wrap {
+  overflow-x: auto;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--panel);
+}
+
+thead tr {
+  background: var(--dark2);
+  border-bottom: 2px solid var(--border);
+}
+
+th {
+  font-family: 'Cinzel', serif;
+  font-size: 0.65rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--gold-dark);
+  padding: 0.9rem 1rem;
+  text-align: left;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+th:hover { color: var(--gold); }
+
+td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border);
+  font-size: 1rem;
+  vertical-align: middle;
+}
+
+tr:last-child td { border-bottom: none; }
+
+tbody tr {
+  transition: background 0.15s;
+}
+tbody tr:hover { background: rgba(201,162,39,0.04); }
+
+.badge {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 20px;
+  font-family: 'Cinzel', serif;
+  font-size: 0.6rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.badge-lider    { background: rgba(201,162,39,0.15); color: var(--gold); border: 1px solid var(--gold-dark); }
+.badge-vice     { background: rgba(201,162,39,0.08); color: var(--gold-light); border: 1px solid rgba(201,162,39,0.3); }
+.badge-membro   { background: rgba(255,255,255,0.05); color: var(--text-dim); border: 1px solid var(--border); }
+.badge-recruta  { background: rgba(39,174,96,0.08); color: var(--green-light); border: 1px solid rgba(39,174,96,0.3); }
+.badge-inativo  { background: rgba(192,57,43,0.08); color: var(--red-light); border: 1px solid rgba(192,57,43,0.3); }
+
+.actions-cell { display: flex; gap: 0.4rem; }
+
+.empty-state {
+  text-align: center;
+  padding: 3rem;
+  color: var(--text-dim);
+}
+
+.empty-state .empty-icon { font-size: 3rem; margin-bottom: 1rem; }
+
+/* ── ITEMS PAGE ── */
+.items-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1.2rem;
+}
+
+.item-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.2rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.item-card:hover {
+  border-color: var(--gold-dark);
+  box-shadow: 0 0 20px rgba(201,162,39,0.08);
+}
+
+.item-card.owned {
+  border-color: rgba(39,174,96,0.4);
+  background: linear-gradient(135deg, var(--panel) 0%, rgba(39,174,96,0.04) 100%);
+}
+
+.item-left {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.item-icon {
+  font-size: 1.8rem;
+  width: 44px;
+  text-align: center;
+  filter: drop-shadow(0 0 8px rgba(201,162,39,0.4));
+}
+
+.item-name {
+  font-family: 'Cinzel', serif;
+  font-size: 0.9rem;
+  color: var(--text);
+}
+
+.item-owner {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  margin-top: 0.2rem;
+}
+
+.item-owner.has-owner { color: var(--green-light); }
+
+.item-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  align-items: flex-end;
+}
+
+.item-edit-row {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.item-input {
+  width: 130px;
+  background: var(--dark2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.35rem 0.6rem;
+  color: var(--text);
+  font-family: 'Crimson Text', serif;
+  font-size: 0.9rem;
+  outline: none;
+}
+.item-input:focus { border-color: var(--gold-dark); }
+
+/* ── SERVER PAGE ── */
+.server-info {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.info-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.2rem;
+}
+
+.info-card-label {
+  font-family: 'Cinzel', serif;
+  font-size: 0.62rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 0.4rem;
+}
+
+.info-card-value {
+  font-family: 'Cinzel', serif;
+  font-size: 1rem;
+  color: var(--gold-light);
+}
+
+.server-iframe-wrap {
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--dark2);
+}
+
+.server-iframe-wrap iframe {
+  width: 100%;
+  height: 600px;
+  border: none;
+  display: block;
+}
+
+/* ── TOAST ── */
+#toast-container {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.toast {
+  background: var(--dark3);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--gold);
+  border-radius: var(--radius);
+  padding: 0.8rem 1.2rem;
+  font-family: 'Cinzel', serif;
+  font-size: 0.75rem;
+  letter-spacing: 1px;
+  color: var(--text);
+  box-shadow: var(--shadow);
+  animation: slideIn 0.3s ease;
+  max-width: 320px;
+}
+
+.toast.success { border-left-color: var(--green); }
+.toast.error   { border-left-color: var(--red); }
+
+@keyframes slideIn {
+  from { transform: translateX(120%); opacity: 0; }
+  to   { transform: translateX(0); opacity: 1; }
+}
+
+/* ── MODAL ── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0,0,0,0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+.modal-overlay.open {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.modal {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-top: 2px solid var(--gold-dark);
+  border-radius: var(--radius);
+  padding: 2rem;
+  width: 90%;
+  max-width: 420px;
+  box-shadow: var(--shadow);
+  transform: translateY(20px);
+  transition: transform 0.2s;
+}
+.modal-overlay.open .modal { transform: translateY(0); }
+
+.modal-title {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 1rem;
+  color: var(--gold);
+  margin-bottom: 1rem;
+}
+
+.modal-text {
+  color: var(--text-dim);
+  margin-bottom: 1.5rem;
+  line-height: 1.6;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 0.8rem;
+  justify-content: flex-end;
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 600px) {
+  nav { padding: 0 1rem; }
+  .nav-brand { font-size: 0.85rem; }
+  .nav-links a { padding: 0.4rem 0.5rem; font-size: 0.65rem; letter-spacing: 0.5px; }
+  .section-wrap { padding: 2rem 1rem; }
+  .stats-row { gap: 1rem; }
+  .stat-box { padding: 0.8rem 1.2rem; }
+}
+
+/* ── ONLINE DOT ── */
+.online-dot {
+  display: inline-block;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--green-light);
+  box-shadow: 0 0 6px var(--green-light);
+  margin-right: 6px;
+  animation: pulse 2s infinite;
+}
+@keyframes pulse {
+  0%,100% { opacity: 1; }
+  50%      { opacity: 0.4; }
+}
+
+/* ── SORT ARROW ── */
+.sort-icon { margin-left: 4px; opacity: 0.4; font-size: 0.7em; }
+.sort-icon.active { opacity: 1; color: var(--gold); }
+</style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav>
+  <span class="nav-brand" onclick="showPage('home',null)">⚔ OLIMPO</span>
+  <ul class="nav-links">
+    <li><a href="#" id="nav-home"    onclick="showPage('home',this);return false;">Início</a></li>
+    <li><a href="#" id="nav-members" onclick="showPage('members',this);return false;">Membros</a></li>
+    <li><a href="#" id="nav-items"   onclick="showPage('items',this);return false;">Itens Boss</a></li>
+    <li><a href="#" id="nav-server"  onclick="showPage('server',this);return false;">Servidor</a></li>
+  </ul>
+</nav>
+
+<!-- TOAST -->
+<div id="toast-container"></div>
+
+<!-- CONFIRM MODAL -->
+<div class="modal-overlay" id="confirm-modal">
+  <div class="modal">
+    <div class="modal-title" id="confirm-title">Confirmar ação</div>
+    <div class="modal-text"  id="confirm-text">Tem certeza?</div>
+    <div class="modal-actions">
+      <button class="btn btn-outline btn-sm" onclick="closeConfirm(false)">Cancelar</button>
+      <button class="btn btn-danger btn-sm" onclick="closeConfirm(true)">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ HOME ══════════════ -->
+<div id="page-home" class="page">
+  <div class="home-inner">
+    <div id="logo-container"></div>
+    <h1 class="home-title" id="home-clan-name">Olimpo</h1>
+    <div class="home-subtitle" id="home-server-name">NightPT · Priston Tale</div>
+    <div class="divider"></div>
+    <p class="home-desc" id="home-desc"></p>
+    <div class="stats-row">
+      <div class="stat-box">
+        <div class="stat-value" id="stat-members">–</div>
+        <div class="stat-label">Membros</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-value" id="stat-active">–</div>
+        <div class="stat-label">Ativos</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-value" id="stat-items">–</div>
+        <div class="stat-label">Itens Boss</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:1rem;flex-wrap:wrap;justify-content:center;">
+      <a class="btn btn-gold" id="server-link" href="#" target="_blank" rel="noopener">
+        ⚔ Jogar no NightPT
+      </a>
+      <button class="btn btn-outline" onclick="showPage('members',document.getElementById('nav-members'))">
+        Ver Membros
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ MEMBERS ══════════════ -->
+<div id="page-members" class="page">
+  <div class="section-wrap">
+    <div class="section-header">
+      <div class="section-title">Membros do Clã</div>
+      <div class="section-sub">Gerenciamento de integrantes</div>
+    </div>
+
+    <div class="members-toolbar">
+      <input class="search-box" id="member-search" placeholder="🔍 Buscar membro..." oninput="renderMembers()"/>
+      <button class="btn btn-gold btn-sm" onclick="toggleMemberForm()">+ Adicionar</button>
+    </div>
+
+    <!-- Add/Edit Form -->
+    <div class="member-form-panel" id="member-form-panel">
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Nome do personagem</label>
+          <input class="form-input" id="f-name" placeholder="Ex: Leonidas"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Classe</label>
+          <select class="form-select" id="f-class">
+            <option value="">— Selecionar —</option>
+            <option>Fighter</option>
+            <option>Mechanician</option>
+            <option>Pikeman</option>
+            <option>Atalanta</option>
+            <option>Knight</option>
+            <option>Wizard</option>
+            <option>Priest</option>
+            <option>Assassin</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Nível</label>
+          <input class="form-input" id="f-level" type="number" min="1" max="999" placeholder="Ex: 150"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Cargo</label>
+          <select class="form-select" id="f-role">
+            <option value="Membro">Membro</option>
+            <option value="Recruta">Recruta</option>
+            <option value="Vice-Líder">Vice-Líder</option>
+            <option value="Líder">Líder</option>
+            <option value="Inativo">Inativo</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Nota (opcional)</label>
+          <input class="form-input" id="f-note" placeholder="Ex: Principal tank"/>
+        </div>
+      </div>
+      <div style="display:flex;gap:0.8rem;flex-wrap:wrap;">
+        <button class="btn btn-gold btn-sm" onclick="saveMember()">💾 Salvar</button>
+        <button class="btn btn-outline btn-sm" onclick="toggleMemberForm(false)">Cancelar</button>
+      </div>
+      <input type="hidden" id="f-editing-id"/>
+    </div>
+
+    <div class="members-table-wrap">
+      <table id="members-table">
+        <thead>
+          <tr>
+            <th onclick="sortMembers('name')">Nome <span class="sort-icon" id="sort-name">▲</span></th>
+            <th onclick="sortMembers('class')">Classe <span class="sort-icon" id="sort-class">▲</span></th>
+            <th onclick="sortMembers('level')">Nível <span class="sort-icon" id="sort-level">▲</span></th>
+            <th onclick="sortMembers('role')">Cargo <span class="sort-icon" id="sort-role">▲</span></th>
+            <th>Nota</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="members-tbody"></tbody>
+      </table>
+    </div>
+    <div id="members-empty" class="empty-state" style="display:none;">
+      <div class="empty-icon">⚔️</div>
+      <div>Nenhum membro encontrado.</div>
+    </div>
+    <div style="margin-top:0.8rem;color:var(--text-dim);font-size:0.85rem;" id="members-count"></div>
+  </div>
+</div>
+
+<!-- ══════════════ ITEMS ══════════════ -->
+<div id="page-items" class="page">
+  <div class="section-wrap">
+    <div class="section-header">
+      <div class="section-title">Itens Boss</div>
+      <div class="section-sub">Controle de drops em tempo real</div>
+    </div>
+    <div class="items-grid" id="items-grid"></div>
+  </div>
+</div>
+
+<!-- ══════════════ SERVER ══════════════ -->
+<div id="page-server" class="page">
+  <div class="section-wrap">
+    <div class="section-header">
+      <div class="section-title">Servidor NightPT</div>
+      <div class="section-sub">Informações e acesso direto</div>
+    </div>
+
+    <div class="server-info">
+      <div class="info-card">
+        <div class="info-card-label">Servidor</div>
+        <div class="info-card-value" id="srv-name">NightPT</div>
+      </div>
+      <div class="info-card">
+        <div class="info-card-label">Jogo</div>
+        <div class="info-card-value">Priston Tale</div>
+      </div>
+      <div class="info-card">
+        <div class="info-card-label">Status</div>
+        <div class="info-card-value"><span class="online-dot"></span>Online</div>
+      </div>
+      <div class="info-card">
+        <div class="info-card-label">Site Oficial</div>
+        <div class="info-card-value">
+          <a id="srv-link" href="#" target="_blank" style="color:var(--gold-light);text-decoration:none;">
+            Abrir ↗
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="server-iframe-wrap">
+      <iframe id="server-iframe" src="about:blank" title="NightPT" allowfullscreen></iframe>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ SCRIPT ══════════════ -->
+<script type="module">
+// ─────────────────────────────────────────────────────────
+//  CONFIG  — edite aqui
+// ─────────────────────────────────────────────────────────
+const CONFIG = {
+  clanName:   "Olimpo",
+  serverName: "NightPT",
+  serverUrl:  "https://nightpt.com/",
+  descricao:  "Somos o Clã Olimpo, uma família unida de guerreiros no servidor NightPT de Priston Tale. Lutamos juntos, crescemos juntos e conquistamos os maiores desafios do jogo.",
+  firebase: {
+    apiKey:            "",
+    authDomain:        "",
+    databaseURL:       "",
+    projectId:         "",
+    storageBucket:     "",
+    messagingSenderId: "",
+    appId:             "",
+  }
+};
+
+// ─────────────────────────────────────────────────────────
+//  ITEMS BOSS — adicione ou remova itens aqui
+// ─────────────────────────────────────────────────────────
+const ITEMS = [
+  { id:'tulla',      name:'Tulla',            icon:'💎' },
+  { id:'kartefant',  name:'Kartefant',         icon:'🗡️' },
+  { id:'bellatra',   name:'Bellatra',          icon:'🛡️' },
+  { id:'shaula',     name:'Shaula',            icon:'⚡' },
+  { id:'dratan',     name:'Dratan',            icon:'🔥' },
+  { id:'rukun',      name:'Rukun',             icon:'❄️' },
+  { id:'resurrected',name:'Ressurrected Boss', icon:'💀' },
+  { id:'chaos',      name:'Chaos Boss',        icon:'🌀' },
+];
+
+// ─────────────────────────────────────────────────────────
+//  LOGO (base64) — substitua pelo base64 da sua imagem
+// ─────────────────────────────────────────────────────────
+const LOGO_SRC = "";  // se vazio mostra ícone ⚔
+
+// ─────────────────────────────────────────────────────────
+//  STATE
+// ─────────────────────────────────────────────────────────
+let members  = [];   // { id, name, class, level, role, note, createdAt }
+let itemData = {};   // { [itemId]: { owner: string } }
+let sortKey  = 'name';
+let sortDir  = 1;    // 1=asc -1=desc
+let db       = null;
+let confirmCb = null;
+
+// ─────────────────────────────────────────────────────────
+//  FIREBASE INIT
+// ─────────────────────────────────────────────────────────
+async function initFirebase() {
+  const { apiKey, databaseURL } = CONFIG.firebase;
+  if (!apiKey || !databaseURL) return;
+
+  try {
+    const { initializeApp }      = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js');
+    const { getDatabase, ref, onValue, set, remove } =
+      await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js');
+
+    const app = initializeApp(CONFIG.firebase);
+    db = getDatabase(app);
+
+    // membros
+    onValue(ref(db, 'members'), snap => {
+      members = snap.exists() ? Object.values(snap.val()) : [];
+      renderMembers();
+      updateHomeStats();
+    });
+
+    // itens
+    onValue(ref(db, 'items'), snap => {
+      itemData = snap.exists() ? snap.val() : {};
+      renderItems();
+    });
+
+    toast('Firebase conectado!', 'success');
+  } catch(e) {
+    console.error(e);
+    toast('Firebase: erro ao conectar', 'error');
+  }
+}
+
+async function dbSet(path, value) {
+  if (!db) return;
+  const { getDatabase, ref, set } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js');
+  return set(ref(db, path), value);
+}
+
+async function dbRemove(path) {
+  if (!db) return;
+  const { getDatabase, ref, remove } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js');
+  return remove(ref(db, path));
+}
+
+// ─────────────────────────────────────────────────────────
+//  PAGE ROUTING
+// ─────────────────────────────────────────────────────────
+window.showPage = function(id, linkEl) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-links a').forEach(a => a.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  if (linkEl) linkEl.classList.add('active');
+  else {
+    const navEl = document.getElementById('nav-' + id);
+    if (navEl) navEl.classList.add('active');
+  }
+  if (id === 'server') loadServerIframe();
+};
+
+// ─────────────────────────────────────────────────────────
+//  HOME
+// ─────────────────────────────────────────────────────────
+function initHome() {
+  document.getElementById('home-clan-name').textContent  = CONFIG.clanName;
+  document.getElementById('home-server-name').textContent = CONFIG.serverName + ' · Priston Tale';
+  document.getElementById('home-desc').textContent        = CONFIG.descricao;
+  document.getElementById('server-link').href             = CONFIG.serverUrl;
+  document.getElementById('srv-name').textContent         = CONFIG.serverName;
+  document.getElementById('srv-link').href                = CONFIG.serverUrl;
+  document.getElementById('srv-link').textContent         = CONFIG.serverUrl;
+
+  const container = document.getElementById('logo-container');
+  if (LOGO_SRC) {
+    const img = document.createElement('img');
+    img.src       = LOGO_SRC;
+    img.className = 'home-logo';
+    img.alt       = CONFIG.clanName;
+    container.appendChild(img);
+  } else {
+    container.innerHTML = '<div class="home-logo-placeholder">⚔</div>';
+  }
+
+  updateHomeStats();
+}
+
+function updateHomeStats() {
+  const active = members.filter(m => m.role !== 'Inativo').length;
+  document.getElementById('stat-members').textContent = members.length || '0';
+  document.getElementById('stat-active').textContent  = active || '0';
+  document.getElementById('stat-items').textContent   = ITEMS.length;
+}
+
+// ─────────────────────────────────────────────────────────
+//  MEMBERS
+// ─────────────────────────────────────────────────────────
+window.toggleMemberForm = function(forceOpen) {
+  const panel = document.getElementById('member-form-panel');
+  const open  = forceOpen !== undefined ? forceOpen : !panel.classList.contains('open');
+  panel.classList.toggle('open', open);
+  if (!open) clearForm();
+};
+
+function clearForm() {
+  ['f-name','f-class','f-level','f-role','f-note','f-editing-id'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('f-role').value = 'Membro';
+}
+
+window.saveMember = async function() {
+  const name  = document.getElementById('f-name').value.trim();
+  const cls   = document.getElementById('f-class').value;
+  const level = parseInt(document.getElementById('f-level').value) || 0;
+  const role  = document.getElementById('f-role').value || 'Membro';
+  const note  = document.getElementById('f-note').value.trim();
+  const editId = document.getElementById('f-editing-id').value;
+
+  if (!name) { toast('Digite o nome do personagem', 'error'); return; }
+
+  const member = { id: editId || Date.now().toString(), name, class: cls, level, role, note, createdAt: Date.now() };
+
+  if (db) {
+    await dbSet('members/' + member.id, member);
+  } else {
+    const idx = members.findIndex(m => m.id === editId);
+    if (idx >= 0) members[idx] = member; else members.push(member);
+    renderMembers();
+    updateHomeStats();
+  }
+
+  toast(editId ? 'Membro atualizado!' : 'Membro adicionado!', 'success');
+  toggleMemberForm(false);
+};
+
+window.editMember = function(id) {
+  const m = members.find(m => m.id === id);
+  if (!m) return;
+  document.getElementById('f-name').value       = m.name;
+  document.getElementById('f-class').value      = m.class || '';
+  document.getElementById('f-level').value      = m.level || '';
+  document.getElementById('f-role').value       = m.role || 'Membro';
+  document.getElementById('f-note').value       = m.note || '';
+  document.getElementById('f-editing-id').value = m.id;
+  toggleMemberForm(true);
+  document.getElementById('member-form-panel').scrollIntoView({ behavior:'smooth', block:'start' });
+};
+
+window.deleteMember = function(id) {
+  const m = members.find(m => m.id === id);
+  confirm2(`Remover <strong>${m?.name}</strong> do clã?`, async () => {
+    if (db) {
+      await dbRemove('members/' + id);
+    } else {
+      members = members.filter(m => m.id !== id);
+      renderMembers();
+      updateHomeStats();
+    }
+    toast('Membro removido.', 'success');
+  });
+};
+
+window.sortMembers = function(key) {
+  if (sortKey === key) sortDir *= -1;
+  else { sortKey = key; sortDir = 1; }
+  renderMembers();
+};
+
+function renderMembers() {
+  const q = (document.getElementById('member-search')?.value || '').toLowerCase();
+  let list = members.filter(m =>
+    m.name?.toLowerCase().includes(q) ||
+    m.class?.toLowerCase().includes(q) ||
+    m.role?.toLowerCase().includes(q) ||
+    m.note?.toLowerCase().includes(q)
+  );
+
+  list.sort((a,b) => {
+    let va = a[sortKey], vb = b[sortKey];
+    if (sortKey === 'level') { va = +va||0; vb = +vb||0; }
+    else { va = (va||'').toLowerCase(); vb = (vb||'').toLowerCase(); }
+    return va < vb ? -sortDir : va > vb ? sortDir : 0;
+  });
+
+  // update sort icons
+  ['name','class','level','role'].forEach(k => {
+    const el = document.getElementById('sort-' + k);
+    if (!el) return;
+    el.classList.toggle('active', k === sortKey);
+    el.textContent = (k === sortKey && sortDir === -1) ? '▼' : '▲';
+  });
+
+  const tbody = document.getElementById('members-tbody');
+  const empty = document.getElementById('members-empty');
+  const count = document.getElementById('members-count');
+
+  if (!list.length) {
+    tbody.innerHTML = '';
+    if (empty) empty.style.display = 'block';
+  } else {
+    if (empty) empty.style.display = 'none';
+    tbody.innerHTML = list.map(m => `
+      <tr>
+        <td><strong>${esc(m.name)}</strong></td>
+        <td>${esc(m.class||'–')}</td>
+        <td>${m.level||'–'}</td>
+        <td>${roleBadge(m.role)}</td>
+        <td style="color:var(--text-dim);font-size:0.9rem;">${esc(m.note||'')}</td>
+        <td>
+          <div class="actions-cell">
+            <button class="btn btn-outline btn-sm" onclick="editMember('${m.id}')">✏️</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteMember('${m.id}')">🗑</button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  if (count) count.textContent = `${list.length} membro(s) encontrado(s)`;
+}
+
+function roleBadge(role) {
+  const map = {
+    'Líder':      'lider',
+    'Vice-Líder': 'vice',
+    'Membro':     'membro',
+    'Recruta':    'recruta',
+    'Inativo':    'inativo',
+  };
+  const cls = map[role] || 'membro';
+  return `<span class="badge badge-${cls}">${esc(role||'Membro')}</span>`;
+}
+
+// ─────────────────────────────────────────────────────────
+//  ITEMS
+// ─────────────────────────────────────────────────────────
+function renderItems() {
+  const grid = document.getElementById('items-grid');
+  grid.innerHTML = ITEMS.map(item => {
+    const owner = itemData[item.id]?.owner || '';
+    return `
+      <div class="item-card ${owner ? 'owned' : ''}" id="item-card-${item.id}">
+        <div class="item-left">
+          <div class="item-icon">${item.icon}</div>
+          <div>
+            <div class="item-name">${esc(item.name)}</div>
+            <div class="item-owner ${owner ? 'has-owner' : ''}" id="item-owner-${item.id}">
+              ${owner ? '👤 ' + esc(owner) : 'Sem dono'}
+            </div>
+          </div>
+        </div>
+        <div class="item-actions">
+          <div class="item-edit-row" id="item-edit-row-${item.id}" style="display:none;">
+            <input class="item-input" id="item-input-${item.id}" placeholder="Nome do dono" value="${esc(owner)}"
+              onkeydown="if(event.key==='Enter')saveItemOwner('${item.id}')"/>
+            <button class="btn btn-gold btn-sm" onclick="saveItemOwner('${item.id}')">✓</button>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="toggleItemEdit('${item.id}')">✏️</button>
+          ${owner ? `<button class="btn btn-danger btn-sm" onclick="clearItemOwner('${item.id}')">✕</button>` : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+window.toggleItemEdit = function(id) {
+  const row = document.getElementById('item-edit-row-' + id);
+  const isOpen = row.style.display !== 'none';
+  row.style.display = isOpen ? 'none' : 'flex';
+  if (!isOpen) document.getElementById('item-input-' + id)?.focus();
+};
+
+window.saveItemOwner = async function(id) {
+  const owner = (document.getElementById('item-input-' + id)?.value || '').trim();
+  const data  = { owner };
+
+  if (db) {
+    await dbSet('items/' + id, data);
+  } else {
+    itemData[id] = data;
+    renderItems();
+  }
+  toast('Item atualizado!', 'success');
+};
+
+window.clearItemOwner = function(id) {
+  confirm2(`Remover dono do item <strong>${ITEMS.find(i=>i.id===id)?.name}</strong>?`, async () => {
+    if (db) {
+      await dbRemove('items/' + id);
+    } else {
+      delete itemData[id];
+      renderItems();
+    }
+    toast('Dono removido.', 'success');
+  });
+};
+
+// ─────────────────────────────────────────────────────────
+//  SERVER IFRAME
+// ─────────────────────────────────────────────────────────
+let iframeLoaded = false;
+function loadServerIframe() {
+  if (iframeLoaded) return;
+  iframeLoaded = true;
+  document.getElementById('server-iframe').src = CONFIG.serverUrl;
+}
+
+// ─────────────────────────────────────────────────────────
+//  TOAST
+// ─────────────────────────────────────────────────────────
+function toast(msg, type = '') {
+  const t = document.createElement('div');
+  t.className = 'toast ' + type;
+  t.textContent = msg;
+  document.getElementById('toast-container').appendChild(t);
+  setTimeout(() => t.remove(), 3500);
+}
+
+// ─────────────────────────────────────────────────────────
+//  CONFIRM MODAL
+// ─────────────────────────────────────────────────────────
+function confirm2(text, cb) {
+  confirmCb = cb;
+  document.getElementById('confirm-text').innerHTML = text;
+  document.getElementById('confirm-modal').classList.add('open');
+}
+
+window.closeConfirm = function(yes) {
+  document.getElementById('confirm-modal').classList.remove('open');
+  if (yes && confirmCb) confirmCb();
+  confirmCb = null;
+};
+
+// ─────────────────────────────────────────────────────────
+//  UTILS
+// ─────────────────────────────────────────────────────────
+function esc(s) {
+  return String(s)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
+}
+
+// ─────────────────────────────────────────────────────────
+//  BOOT
+// ─────────────────────────────────────────────────────────
+initHome();
+renderItems();
+renderMembers();
+showPage('home', document.getElementById('nav-home'));
+initFirebase();
+</script>
+</body>
+</html>
