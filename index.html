@@ -830,7 +830,7 @@ tbody tr:hover { background: rgba(201,162,39,0.04); }
   <div class="section-wrap">
     <div class="section-header">
       <div class="section-title">Itens Boss</div>
-      <div class="section-sub">Controle de drops em tempo real</div>
+      <div class="section-sub">Controle de itens boss faltantes dos membros</div>
     </div>
     <div class="items-grid" id="items-grid"></div>
   </div>
@@ -899,13 +899,11 @@ const CONFIG = {
 // ─────────────────────────────────────────────────────────
 const ITEMS = [
   { id:'tulla',      name:'Tulla',            icon:'💎' },
-  { id:'kartefant',  name:'Kartefant',         icon:'🗡️' },
-  { id:'bellatra',   name:'Bellatra',          icon:'🛡️' },
-  { id:'shaula',     name:'Shaula',            icon:'⚡' },
-  { id:'dratan',     name:'Dratan',            icon:'🔥' },
-  { id:'rukun',      name:'Rukun',             icon:'❄️' },
-  { id:'resurrected',name:'Ressurrected Boss', icon:'💀' },
-  { id:'chaos',      name:'Chaos Boss',        icon:'🌀' },
+  { id:'shy',  name:'Shy',         icon:'🗡️' },
+  { id:'pedra de gelo',   name:'Pedra de Gelo',          icon:'❄️' },
+  { id:'brinco babel',     name:'Brinco Babel',            icon:'⚡' },
+  { id:'bota draxos',     name:'Bota Draxos',            icon:'🔥' },
+  { id:'luva greedy',      name:'Luva Greedy',             icon:'💀' },
 ];
 
 // ─────────────────────────────────────────────────────────
@@ -1172,13 +1170,13 @@ function renderItems() {
           <div>
             <div class="item-name">${esc(item.name)}</div>
             <div class="item-owner ${owner ? 'has-owner' : ''}" id="item-owner-${item.id}">
-              ${owner ? '👤 ' + esc(owner) : 'Sem dono'}
+              ${owner ? '👤 ' + esc(owner) : 'Sem personagem'}
             </div>
           </div>
         </div>
         <div class="item-actions">
           <div class="item-edit-row" id="item-edit-row-${item.id}" style="display:none;">
-            <input class="item-input" id="item-input-${item.id}" placeholder="Nome do dono" value="${esc(owner)}"
+            <input class="item-input" id="item-input-${item.id}" placeholder="Nome do personagem" value="${esc(owner)}"
               onkeydown="if(event.key==='Enter')saveItemOwner('${item.id}')"/>
             <button class="btn btn-gold btn-sm" onclick="saveItemOwner('${item.id}')">✓</button>
           </div>
@@ -1211,7 +1209,7 @@ window.saveItemOwner = async function(id) {
 };
 
 window.clearItemOwner = function(id) {
-  confirm2(`Remover dono do item <strong>${ITEMS.find(i=>i.id===id)?.name}</strong>?`, async () => {
+  confirm2(`Remover personagem da lista de item <strong>${ITEMS.find(i=>i.id===id)?.name}</strong>?`, async () => {
     if (db) {
       await dbRemove('items/' + id);
     } else {
