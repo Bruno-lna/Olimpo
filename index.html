@@ -956,6 +956,25 @@ let db       = null;
 let confirmCb = null;
 
 // ─────────────────────────────────────────────────────────
+//  LOCALSTORAGE PERSISTENCE (fallback sem Firebase)
+// ─────────────────────────────────────────────────────────
+const LS_MEMBERS = 'olimpo_members';
+const LS_ITEMS   = 'olimpo_items';
+
+function lsLoad() {
+  try { members  = JSON.parse(localStorage.getItem(LS_MEMBERS) || '[]'); } catch(e) {}
+  try { itemData = JSON.parse(localStorage.getItem(LS_ITEMS)   || '{}'); } catch(e) {}
+}
+
+function lsSaveMembers() {
+  if (!db) localStorage.setItem(LS_MEMBERS, JSON.stringify(members));
+}
+
+function lsSaveItems() {
+  if (!db) localStorage.setItem(LS_ITEMS, JSON.stringify(itemData));
+}
+
+// ─────────────────────────────────────────────────────────
 //  FIREBASE INIT
 // ─────────────────────────────────────────────────────────
 async function initFirebase() {
@@ -1090,6 +1109,7 @@ window.saveMember = async function() {
   } else {
     const idx = members.findIndex(m => m.id === editId);
     if (idx >= 0) members[idx] = member; else members.push(member);
+    lsSaveMembers();
     renderMembers();
     updateHomeStats();
   }
@@ -1118,6 +1138,7 @@ window.deleteMember = function(id) {
       await dbRemove('members/' + id);
     } else {
       members = members.filter(m => m.id !== id);
+      lsSaveMembers();
       renderMembers();
       updateHomeStats();
     }
@@ -1252,6 +1273,7 @@ window.addItemChar = async function(id) {
     if (!itemData[id].characters) itemData[id].characters = {};
     const key = Date.now().toString();
     itemData[id].characters[key] = name;
+    lsSaveItems();
     renderItems();
   }
   if (input) input.value = '';
@@ -1265,6 +1287,7 @@ window.removeItemChar = function(id, key) {
       await dbRemove('items/' + id + '/characters/' + key);
     } else {
       delete itemData[id]?.characters?.[key];
+      lsSaveItems();
       renderItems();
     }
     toast('Personagem removido.', 'success');
@@ -1321,6 +1344,7 @@ function esc(s) {
 // ─────────────────────────────────────────────────────────
 //  BOOT
 // ─────────────────────────────────────────────────────────
+lsLoad();
 initHome();
 renderItems();
 renderMembers();
