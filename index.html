@@ -452,10 +452,16 @@ tbody tr:hover { background: rgba(201,162,39,0.04); }
   border-radius: var(--radius);
   padding: 1.2rem 1.5rem;
   display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.item-card-top {
+  display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .item-card:hover {
@@ -493,7 +499,35 @@ tbody tr:hover { background: rgba(201,162,39,0.04); }
   margin-top: 0.2rem;
 }
 
-.item-owner.has-owner { color: var(--green-light); }
+.item-chars-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.3rem;
+}
+
+.item-char-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: rgba(39,174,96,0.12);
+  border: 1px solid rgba(39,174,96,0.3);
+  border-radius: 20px;
+  padding: 0.15rem 0.55rem;
+  font-size: 0.8rem;
+  color: var(--green-light);
+}
+
+.item-char-tag button {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.4);
+  cursor: pointer;
+  font-size: 0.75rem;
+  padding: 0;
+  line-height: 1;
+}
+.item-char-tag button:hover { color: #e74c3c; }
 
 .item-actions {
   display: flex;
@@ -962,6 +996,12 @@ async function dbSet(path, value) {
   return set(ref(db, path), value);
 }
 
+async function dbPush(path, value) {
+  if (!db) return null;
+  const { ref, push } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js');
+  return push(ref(db, path), value);
+}
+
 async function dbRemove(path) {
   if (!db) return;
   const { getDatabase, ref, remove } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js');
@@ -1162,27 +1202,32 @@ function roleBadge(role) {
 function renderItems() {
   const grid = document.getElementById('items-grid');
   grid.innerHTML = ITEMS.map(item => {
-    const owner = itemData[item.id]?.owner || '';
+    const chars = itemData[item.id]?.characters || {};
+    const charEntries = Object.entries(chars);
+    const hasChars = charEntries.length > 0;
+    const charTags = charEntries.map(([key, name]) =>
+      `<span class="item-char-tag">👤 ${esc(name)}<button onclick="removeItemChar('${item.id}','${key}')" title="Remover">✕</button></span>`
+    ).join('');
     return `
-      <div class="item-card ${owner ? 'owned' : ''}" id="item-card-${item.id}">
-        <div class="item-left">
-          <div class="item-icon">${item.icon}</div>
-          <div>
-            <div class="item-name">${esc(item.name)}</div>
-            <div class="item-owner ${owner ? 'has-owner' : ''}" id="item-owner-${item.id}">
-              ${owner ? '👤 ' + esc(owner) : 'Sem personagem'}
+      <div class="item-card ${hasChars ? 'owned' : ''}" id="item-card-${item.id}">
+        <div class="item-card-top">
+          <div class="item-left">
+            <div class="item-icon">${item.icon}</div>
+            <div>
+              <div class="item-name">${esc(item.name)}</div>
+              ${!hasChars ? `<div class="item-owner">Sem personagem</div>` : ''}
             </div>
           </div>
-        </div>
-        <div class="item-actions">
-          <div class="item-edit-row" id="item-edit-row-${item.id}" style="display:none;">
-            <input class="item-input" id="item-input-${item.id}" placeholder="Nome do personagem" value="${esc(owner)}"
-              onkeydown="if(event.key==='Enter')saveItemOwner('${item.id}')"/>
-            <button class="btn btn-gold btn-sm" onclick="saveItemOwner('${item.id}')">✓</button>
+          <div class="item-actions">
+            <div class="item-edit-row" id="item-edit-row-${item.id}" style="display:none;">
+              <input class="item-input" id="item-input-${item.id}" placeholder="Nome do personagem"
+                onkeydown="if(event.key==='Enter')addItemChar('${item.id}')"/>
+              <button class="btn btn-gold btn-sm" onclick="addItemChar('${item.id}')">+</button>
+            </div>
+            <button class="btn btn-outline btn-sm" onclick="toggleItemEdit('${item.id}')">✏️</button>
           </div>
-          <button class="btn btn-outline btn-sm" onclick="toggleItemEdit('${item.id}')">✏️</button>
-          ${owner ? `<button class="btn btn-danger btn-sm" onclick="clearItemOwner('${item.id}')">✕</button>` : ''}
         </div>
+        ${hasChars ? `<div class="item-chars-list">${charTags}</div>` : ''}
       </div>
     `;
   }).join('');
@@ -1195,28 +1240,34 @@ window.toggleItemEdit = function(id) {
   if (!isOpen) document.getElementById('item-input-' + id)?.focus();
 };
 
-window.saveItemOwner = async function(id) {
-  const owner = (document.getElementById('item-input-' + id)?.value || '').trim();
-  const data  = { owner };
+window.addItemChar = async function(id) {
+  const input = document.getElementById('item-input-' + id);
+  const name = (input?.value || '').trim();
+  if (!name) return;
 
   if (db) {
-    await dbSet('items/' + id, data);
+    await dbPush('items/' + id + '/characters', name);
   } else {
-    itemData[id] = data;
+    if (!itemData[id]) itemData[id] = { characters: {} };
+    if (!itemData[id].characters) itemData[id].characters = {};
+    const key = Date.now().toString();
+    itemData[id].characters[key] = name;
     renderItems();
   }
-  toast('Item atualizado!', 'success');
+  if (input) input.value = '';
+  toast('Personagem adicionado!', 'success');
 };
 
-window.clearItemOwner = function(id) {
-  confirm2(`Remover personagem da lista de item <strong>${ITEMS.find(i=>i.id===id)?.name}</strong>?`, async () => {
+window.removeItemChar = function(id, key) {
+  const charName = itemData[id]?.characters?.[key] || '';
+  confirm2(`Remover personagem <strong>${esc(charName)}</strong> de <strong>${esc(ITEMS.find(i=>i.id===id)?.name||'')}</strong>?`, async () => {
     if (db) {
-      await dbRemove('items/' + id);
+      await dbRemove('items/' + id + '/characters/' + key);
     } else {
-      delete itemData[id];
+      delete itemData[id]?.characters?.[key];
       renderItems();
     }
-    toast('Dono removido.', 'success');
+    toast('Personagem removido.', 'success');
   });
 };
 
