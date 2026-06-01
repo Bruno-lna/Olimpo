@@ -723,6 +723,16 @@ tbody tr:hover { background: rgba(201,162,39,0.04); }
 .auth-link a{color:var(--gold-light);text-decoration:none}
 .auth-link a:hover{text-decoration:underline}
 .cargo-inline{background:var(--surface);border:1px solid var(--border);color:var(--text);padding:0.2rem 0.4rem;border-radius:6px;font-size:0.8rem;cursor:pointer}
+
+/* ── MULTI-CHAR ── */
+.char-section-title{font-family:'Cinzel',serif;color:var(--gold);font-size:0.9rem;letter-spacing:1px;margin:1.2rem 0 0.6rem;text-transform:uppercase}
+.char-row{display:grid;grid-template-columns:1fr 1fr 80px 36px;gap:0.5rem;align-items:end;margin-bottom:0.6rem;padding:0.7rem;background:rgba(201,162,39,.06);border:1px solid rgba(201,162,39,.15);border-radius:8px}
+.char-row-label{grid-column:1/-1;font-size:0.78rem;color:var(--gold);font-weight:600;margin-bottom:0.2rem}
+.btn-rm-char{background:rgba(229,115,115,.15);border:1px solid #e57373;color:#e57373;border-radius:6px;width:36px;height:36px;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;align-self:end}
+.btn-rm-char:hover{background:rgba(229,115,115,.3)}
+.btn-add-char{display:inline-flex;align-items:center;gap:0.4rem;margin-top:0.3rem;background:transparent;border:1px dashed var(--gold);color:var(--gold);padding:0.4rem 0.9rem;border-radius:8px;cursor:pointer;font-size:0.85rem}
+.btn-add-char:hover{background:rgba(201,162,39,.1)}
+@media(max-width:500px){.char-row{grid-template-columns:1fr 1fr;grid-template-rows:auto auto}.btn-rm-char{grid-column:2;justify-self:end}}
 </style>
 </head>
 <body>
@@ -913,23 +923,11 @@ tbody tr:hover { background: rgba(201,162,39,0.04); }
           <label class="form-label">WhatsApp *</label>
           <input class="form-input" id="reg-whatsapp" placeholder="(99) 99999-9999"/>
         </div>
-        <div class="form-group">
-          <label class="form-label">Nome do personagem *</label>
-          <input class="form-input" id="reg-personagem" placeholder="Ex: Leonidas"/>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Classe</label>
-          <select class="form-select" id="reg-classe">
-            <option value="">— Selecionar —</option>
-            <option>Lutador</option><option>Mecanico</option><option>Pike</option>
-            <option>Atalanta</option><option>Cavaleiro</option><option>Mago</option>
-            <option>Sacer</option><option>Arqueira</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Nível</label>
-          <input class="form-input" id="reg-nivel" type="number" min="1" max="999" placeholder="Ex: 150"/>
-        </div>
+      </div>
+      <div class="char-section-title">⚔ Personagens *</div>
+      <div id="reg-chars-list"></div>
+      <button type="button" class="btn-add-char" onclick="addCharRow('reg')">+ Adicionar personagem</button>
+      <div class="form-grid" style="margin-top:1rem;">
         <div class="form-group">
           <label class="form-label">Login *</label>
           <input class="form-input" id="reg-login" placeholder="Escolha um login" autocomplete="username"/>
@@ -968,23 +966,11 @@ tbody tr:hover { background: rgba(201,162,39,0.04); }
           <label class="form-label">WhatsApp</label>
           <input class="form-input" id="pf-whatsapp" placeholder="(99) 99999-9999"/>
         </div>
-        <div class="form-group">
-          <label class="form-label">Nome do personagem</label>
-          <input class="form-input" id="pf-personagem" placeholder="Ex: Leonidas"/>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Classe</label>
-          <select class="form-select" id="pf-classe">
-            <option value="">— Selecionar —</option>
-            <option>Lutador</option><option>Mecanico</option><option>Pike</option>
-            <option>Atalanta</option><option>Cavaleiro</option><option>Mago</option>
-            <option>Sacer</option><option>Arqueira</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Nível</label>
-          <input class="form-input" id="pf-nivel" type="number" min="1" max="999"/>
-        </div>
+      </div>
+      <div class="char-section-title">⚔ Personagens</div>
+      <div id="pf-chars-list"></div>
+      <button type="button" class="btn-add-char" onclick="addCharRow('pf')">+ Adicionar personagem</button>
+      <div class="form-grid" style="margin-top:1rem;">
         <div class="form-group">
           <label class="form-label">Cargo</label>
           <input class="form-input" id="pf-cargo" readonly
@@ -1147,14 +1133,12 @@ window.showPage = function(id, linkEl) {
   if (id === 'server') loadServerIframe();
   if (id === 'perfil') {
     if (!currentUser) { showPage('login', document.getElementById('nav-login')); return; }
-    document.getElementById('pf-nome').value       = currentUser.nome       || '';
-    document.getElementById('pf-whatsapp').value   = currentUser.whatsapp   || '';
-    document.getElementById('pf-personagem').value = currentUser.personagem || '';
-    document.getElementById('pf-classe').value     = currentUser.classe     || '';
-    document.getElementById('pf-nivel').value      = currentUser.nivel      || '';
-    document.getElementById('pf-cargo').value      = currentUser.cargo      || '';
-    document.getElementById('pf-senha').value      = '';
-    document.getElementById('pf-senha2').value     = '';
+    document.getElementById('pf-nome').value     = currentUser.nome     || '';
+    document.getElementById('pf-whatsapp').value = currentUser.whatsapp || '';
+    document.getElementById('pf-cargo').value    = currentUser.cargo    || '';
+    document.getElementById('pf-senha').value    = '';
+    document.getElementById('pf-senha2').value   = '';
+    initCharRows('pf', currentUser.personagens);
   }
 };
 
@@ -1236,15 +1220,16 @@ window.doLogout = function() {
 window.doRegister = async function() {
   const nome       = (document.getElementById('reg-nome').value       || '').trim();
   const whatsapp   = (document.getElementById('reg-whatsapp').value   || '').trim();
-  const personagem = (document.getElementById('reg-personagem').value || '').trim();
-  const classe     =  document.getElementById('reg-classe').value     || '';
-  const nivel      = parseInt(document.getElementById('reg-nivel').value) || 0;
   const login      = (document.getElementById('reg-login').value      || '').trim();
   const senha      =  document.getElementById('reg-senha').value      || '';
   const senha2     =  document.getElementById('reg-senha2').value     || '';
+  const personagens = collectChars('reg');
 
-  if (!nome || !whatsapp || !personagem || !login || !senha) {
+  if (!nome || !whatsapp || !login || !senha) {
     toast('Preencha todos os campos obrigatórios (*)', 'error'); return;
+  }
+  if (personagens.length === 0) {
+    toast('Adicione pelo menos um personagem', 'error'); return;
   }
   if (senha.length < 4) { toast('Senha deve ter pelo menos 4 caracteres', 'error'); return; }
   if (senha !== senha2)  { toast('As senhas não coincidem', 'error'); return; }
@@ -1254,7 +1239,7 @@ window.doRegister = async function() {
 
   const senhaHash = await hashPassword(senha);
   const cargo = users.length === 0 ? 'Líder' : 'Recruta';
-  const user  = { id: Date.now().toString(), nome, whatsapp, personagem, classe, nivel, login, senhaHash, cargo, createdAt: Date.now() };
+  const user  = { id: Date.now().toString(), nome, whatsapp, personagens, login, senhaHash, cargo, createdAt: Date.now() };
 
   if (db) {
     await dbSet('users/' + user.id, user);
@@ -1269,11 +1254,10 @@ window.doRegister = async function() {
   localStorage.setItem(LS_SESSION, JSON.stringify(user));
   updateNavbar();
   toast(`Cadastro realizado! Bem-vindo, ${personagem}!`, 'success');
-  ['reg-nome','reg-whatsapp','reg-personagem','reg-login','reg-senha','reg-senha2'].forEach(id => {
+  ['reg-nome','reg-whatsapp','reg-login','reg-senha','reg-senha2'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
-  document.getElementById('reg-classe').value = '';
-  document.getElementById('reg-nivel').value  = '';
+  initCharRows('reg', [{}]);
   showPage('home', document.getElementById('nav-home'));
 };
 
@@ -1281,17 +1265,16 @@ window.saveProfile = async function() {
   if (!currentUser) { toast('Você precisa estar logado', 'error'); return; }
   const nome       = (document.getElementById('pf-nome').value       || '').trim();
   const whatsapp   = (document.getElementById('pf-whatsapp').value   || '').trim();
-  const personagem = (document.getElementById('pf-personagem').value || '').trim();
-  const classe     =  document.getElementById('pf-classe').value     || '';
-  const nivel      = parseInt(document.getElementById('pf-nivel').value) || 0;
   const senha      =  document.getElementById('pf-senha').value      || '';
   const senha2     =  document.getElementById('pf-senha2').value     || '';
+  const personagens = collectChars('pf');
 
-  if (!nome || !whatsapp || !personagem) { toast('Preencha os campos obrigatórios', 'error'); return; }
+  if (!nome || !whatsapp) { toast('Preencha nome e WhatsApp', 'error'); return; }
+  if (personagens.length === 0) { toast('Adicione pelo menos um personagem', 'error'); return; }
   if (senha && senha.length < 4) { toast('Nova senha deve ter pelo menos 4 caracteres', 'error'); return; }
   if (senha && senha !== senha2)  { toast('As senhas não coincidem', 'error'); return; }
 
-  const updated = { ...currentUser, nome, whatsapp, personagem, classe, nivel };
+  const updated = { ...currentUser, nome, whatsapp, personagens };
   if (senha) updated.senhaHash = await hashPassword(senha);
 
   if (db) {
@@ -1343,6 +1326,69 @@ window.adminDeleteUser = function(userId) {
   });
 };
 
+
+// ─────────────────────────────────────────────────────────
+//  MULTI-CHAR ROWS
+// ─────────────────────────────────────────────────────────
+const CLASSES = ['Lutador','Mecanico','Pike','Atalanta','Cavaleiro','Mago','Sacer','Arqueira'];
+
+function classeOptions(selected) {
+  return '<option value="">— Classe —</option>' +
+    CLASSES.map(c => `<option${c===selected?' selected':''}>${c}</option>`).join('');
+}
+
+window.addCharRow = function(prefix, char) {
+  const list = document.getElementById(prefix + '-chars-list');
+  const idx  = list.children.length;
+  const row  = document.createElement('div');
+  row.className = 'char-row';
+  row.innerHTML = `
+    <div class="char-row-label">Personagem ${idx + 1}</div>
+    <input  class="form-input" placeholder="Nome do personagem" value="${esc(char?.personagem||'')}"
+            data-char-field="personagem"/>
+    <select class="form-select" data-char-field="classe">${classeOptions(char?.classe||'')}</select>
+    <input  class="form-input" type="number" min="1" max="999" placeholder="Nível"
+            value="${char?.nivel||''}" data-char-field="nivel" style="min-width:0"/>
+    ${idx > 0
+      ? `<button type="button" class="btn-rm-char" onclick="removeCharRow(this)" title="Remover">✕</button>`
+      : `<div></div>`}
+  `;
+  list.appendChild(row);
+  renumberCharRows(prefix);
+};
+
+window.removeCharRow = function(btn) {
+  const row  = btn.closest('.char-row');
+  const list = row.parentElement;
+  const prefix = list.id.replace('-chars-list','');
+  row.remove();
+  renumberCharRows(prefix);
+};
+
+function renumberCharRows(prefix) {
+  const list = document.getElementById(prefix + '-chars-list');
+  Array.from(list.children).forEach((row, i) => {
+    const lbl = row.querySelector('.char-row-label');
+    if (lbl) lbl.textContent = `Personagem ${i + 1}`;
+  });
+}
+
+function collectChars(prefix) {
+  const list = document.getElementById(prefix + '-chars-list');
+  return Array.from(list.children).map(row => ({
+    personagem: row.querySelector('[data-char-field="personagem"]').value.trim(),
+    classe:     row.querySelector('[data-char-field="classe"]').value,
+    nivel:      parseInt(row.querySelector('[data-char-field="nivel"]').value) || 0,
+  })).filter(c => c.personagem);
+}
+
+function initCharRows(prefix, personagens) {
+  const list = document.getElementById(prefix + '-chars-list');
+  list.innerHTML = '';
+  const arr = Array.isArray(personagens) && personagens.length ? personagens : [{}];
+  arr.forEach(c => addCharRow(prefix, c));
+}
+
 // ─────────────────────────────────────────────────────────
 //  MEMBERS
 // ─────────────────────────────────────────────────────────
@@ -1356,12 +1402,12 @@ function renderMembers() {
   const q   = (document.getElementById('member-search')?.value || '').toLowerCase();
   const adm = isAdmin();
 
-  let list = users.filter(u =>
-    (u.personagem||'').toLowerCase().includes(q) ||
-    (u.classe    ||'').toLowerCase().includes(q) ||
-    (u.cargo     ||'').toLowerCase().includes(q) ||
-    (u.nome      ||'').toLowerCase().includes(q)
-  );
+  let list = users.filter(u => {
+    const ps = Array.isArray(u.personagens) ? u.personagens : [{personagem:u.personagem||'',classe:u.classe||''}];
+    return (u.cargo||'').toLowerCase().includes(q) ||
+           (u.nome ||'').toLowerCase().includes(q) ||
+           ps.some(p => (p.personagem||'').toLowerCase().includes(q) || (p.classe||'').toLowerCase().includes(q));
+  });
 
   list.sort((a,b) => {
     let va = a[sortKey], vb = b[sortKey];
@@ -1406,9 +1452,14 @@ function renderMembers() {
            </div></td>`
         : '';
       return `<tr>
-        <td><strong>${esc(u.personagem||'–')}</strong>${wa}</td>
-        <td>${esc(u.classe||'–')}</td>
-        <td>${u.nivel||'–'}</td>
+        <td>
+        ${(Array.isArray(u.personagens)&&u.personagens.length?u.personagens:[{personagem:u.personagem||'–',classe:u.classe||'',nivel:u.nivel||''}])
+          .map((p,i)=>`<div><strong>${esc(p.personagem||'–')}</strong>${i===0&&wa?' '+wa:''}</div>`).join('')}
+      </td>
+        <td>${(Array.isArray(u.personagens)&&u.personagens.length?u.personagens:[{classe:u.classe||'–',nivel:u.nivel||''}])
+          .map(p=>`<div>${esc(p.classe||'–')}</div>`).join('')}</td>
+        <td>${(Array.isArray(u.personagens)&&u.personagens.length?u.personagens:[{nivel:u.nivel||'–'}])
+          .map(p=>`<div>${p.nivel||'–'}</div>`).join('')}</td>
         <td>${cargoCell}</td>
         ${acoes}
       </tr>`;
@@ -1552,6 +1603,7 @@ function esc(s) {
 lsLoad();
 updateNavbar();
 initHome();
+initCharRows('reg', [{}]);
 renderItems();
 renderMembers();
 showPage('home', document.getElementById('nav-home'));
