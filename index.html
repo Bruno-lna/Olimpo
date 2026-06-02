@@ -1176,8 +1176,9 @@ const LOGO_SRC = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1B
 // ─────────────────────────────────────────────────────────
 //  STATE
 // ─────────────────────────────────────────────────────────
-let users     = [];  // { id, nome, whatsapp, personagem, classe, nivel, login, senhaHash, cargo, createdAt }
+let users     = [];  // { id, nome, whatsapp, personagens, login, senhaHash, cargo, status, createdAt }
 let itemData  = {};  // { [itemId]: { characters: {} } }
+let blessData = { principal:{participantes:{},grupos:{},estrategia:''}, sub:{participantes:{},grupos:{},estrategia:''} };
 let sortKey   = 'personagem';
 let sortDir   = 1;
 let db        = null;
@@ -1919,6 +1920,199 @@ window.removeItemChar = function(id, key) {
       renderItems();
     }
     toast('Personagem removido.', 'success');
+  });
+};
+
+
+// ─────────────────────────────────────────────────────────
+//  BLESS CASTLE
+// ─────────────────────────────────────────────────────────
+let _blessTag     = 'principal';
+let _blessGrupoId = null;
+let _blessPartId  = null;
+
+window.switchBlessTag = function(tag, btn) {
+  _blessTag = tag;
+  document.querySelectorAll('.bless-tab').forEach(t => t.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderBless();
+};
+
+function blessTagData() {
+  const empty = { participantes:{}, grupos:{}, estrategia:'' };
+  return blessData[_blessTag] || empty;
+}
+
+function renderBless() {
+  const el = document.getElementById('bless-content');
+  if (!el) return;
+  const adm  = isAdmin();
+  const data = blessTagData();
+  const parts  = data.participantes || {};
+  const grupos = data.grupos        || {};
+  const estr   = data.estrategia    || '';
+
+  const estrategiaHtml = adm
+    ? `<textarea class="bless-estrategia-box" id="bless-estr-${_blessTag}"
+          placeholder="Descreva a estratégia do clã para este evento..."></textarea>
+       <button class="btn btn-gold btn-sm" style="margin-top:0.4rem;" onclick="saveBlessEstrategia()">💾 Salvar estratégia</button>`
+    : `<div class="bless-estrategia-view">${estr
+        ? esc(estr)
+        : '<span style="color:var(--text-dim);font-style:italic">Nenhuma estratégia definida.</span>'}</div>`;
+
+  const partEntries = Object.entries(parts).sort((a,b) => (a[1].nome||'').localeCompare(b[1].nome||''));
+  const partRows = partEntries.map(([id, p]) => {
+    const isConf = p.status === 'confirmado';
+    const statusSel = adm
+      ? `<select class="status-select" style="${isConf?'border-color:#4caf50;color:#81c784':'border-color:#ff9800;color:#ffb74d'}"
+              onchange="updateBlessPartStatus('${id}',this.value)">
+           <option value="a-confirmar"${!isConf?' selected':''}>⏳ A confirmar</option>
+           <option value="confirmado"${isConf?' selected':''}>✔ Confirmado</option>
+         </select>`
+      : `<span style="font-size:0.82rem;padding:0.15rem 0.5rem;border-radius:6px;${isConf
+          ?'background:rgba(76,175,80,.15);color:#81c784;border:1px solid #4caf50'
+          :'background:rgba(255,152,0,.12);color:#ffb74d;border:1px solid #ff9800'}">${isConf?'✔ Confirmado':'⏳ A confirmar'}</span>`;
+    const actions = adm
+      ? `<td><div class="actions-cell">
+           <button class="btn btn-outline btn-sm" onclick="openBlessPartModal('${id}')">✏️</button>
+           <button class="btn btn-danger btn-sm"  onclick="deleteBlessPart('${id}')">🗑</button>
+         </div></td>` : '';
+    return `<tr><td><strong>${esc(p.nome||'–')}</strong></td><td>${statusSel}</td>${actions}</tr>`;
+  }).join('');
+
+  const partTable = `<div class="members-table-wrap"><table class="bless-part-table">
+    <thead><tr><th>Personagem</th><th>Status</th>${adm?'<th>Ações</th>':''}</tr></thead>
+    <tbody>${partRows||`<tr><td colspan="${adm?3:2}" style="color:var(--text-dim);text-align:center;padding:1rem;">Nenhum participante cadastrado.</td></tr>`}</tbody>
+  </table></div>`;
+
+  const grupoEntries = Object.entries(grupos).sort((a,b)=>(a[1].nome||'').localeCompare(b[1].nome||''));
+  const grupoCards = grupoEntries.map(([id, g]) => {
+    const membros = (Array.isArray(g.membros) ? g.membros : []).filter(Boolean);
+    const items = Array(6).fill(null).map((_,i) =>
+      membros[i]
+        ? `<li>⚔ ${esc(membros[i])}</li>`
+        : `<li class="empty-slot">— vazio —</li>`).join('');
+    const actions = adm
+      ? `<div class="grupo-actions">
+           <button class="btn btn-outline btn-sm" onclick="openBlessGrupoModal('${id}')">✏️</button>
+           <button class="btn btn-danger btn-sm"  onclick="deleteBlessGrupo('${id}')">🗑</button>
+         </div>` : '';
+    return `<div class="grupo-card">
+      <div class="grupo-card-title">🗡 ${esc(g.nome||'Grupo')} ${actions}</div>
+      <ul class="grupo-member-list">${items}</ul>
+      <div style="font-size:0.75rem;color:var(--text-dim);margin-top:0.4rem">${membros.length}/6 membros</div>
+    </div>`;
+  }).join('');
+
+  el.innerHTML = `
+    <div class="bless-block">
+      <div class="bless-block-title">📋 Estratégia
+        ${adm?'<span style="font-size:0.7rem;color:var(--text-dim);font-weight:400;font-family:sans-serif">(somente líderes editam)</span>':''}
+      </div>${estrategiaHtml}
+    </div>
+    <div class="bless-block">
+      <div class="bless-block-title">👥 Participantes
+        ${adm?`<button class="btn btn-gold btn-sm" onclick="openBlessPartModal(null)">+ Adicionar</button>`:''}
+      </div>${partTable}
+    </div>
+    <div class="bless-block">
+      <div class="bless-block-title">⚔ Grupos
+        ${adm?`<button class="btn btn-gold btn-sm" onclick="openBlessGrupoModal(null)">+ Novo grupo</button>`:''}
+      </div>
+      ${grupoEntries.length
+        ? `<div class="grupos-grid">${grupoCards}</div>`
+        : '<div style="color:var(--text-dim);font-size:0.9rem">Nenhum grupo criado ainda.</div>'}
+    </div>`;
+
+  if (adm) { const ta = document.getElementById('bless-estr-'+_blessTag); if(ta) ta.value = estr; }
+}
+
+window.saveBlessEstrategia = async function() {
+  if (!isAdmin()) return;
+  const ta = document.getElementById('bless-estr-' + _blessTag);
+  const val = ta ? ta.value : '';
+  if (db) await dbSet('bless/' + _blessTag + '/estrategia', val);
+  else { blessData[_blessTag].estrategia = val; renderBless(); }
+  toast('Estratégia salva!', 'success');
+};
+
+window.openBlessPartModal = function(id) {
+  if (!isAdmin()) return;
+  _blessPartId = id;
+  const p = id ? (blessTagData().participantes[id]||{}) : {};
+  document.getElementById('bless-part-modal-title').textContent = id ? 'Editar participante' : 'Adicionar participante';
+  document.getElementById('bless-part-nome').value = p.nome||'';
+  document.getElementById('bless-part-status').value = p.status||'a-confirmar';
+  document.getElementById('bless-part-editing-id').value = id||'';
+  document.getElementById('bless-part-modal').classList.add('open');
+  setTimeout(()=>document.getElementById('bless-part-nome').focus(),80);
+};
+window.closeBlessPartModal = function() { document.getElementById('bless-part-modal').classList.remove('open'); };
+window.saveBlessPart = async function() {
+  if (!isAdmin()) return;
+  const nome   = (document.getElementById('bless-part-nome').value||'').trim();
+  const status = document.getElementById('bless-part-status').value||'a-confirmar';
+  const editId = document.getElementById('bless-part-editing-id').value;
+  if (!nome) { toast('Digite o nome do personagem','error'); return; }
+  const id = editId||Date.now().toString();
+  if (db) await dbSet('bless/'+_blessTag+'/participantes/'+id, {nome,status});
+  else { if(!blessData[_blessTag].participantes) blessData[_blessTag].participantes={}; blessData[_blessTag].participantes[id]={nome,status}; renderBless(); }
+  closeBlessPartModal();
+  toast(editId?'Atualizado!':'Adicionado!','success');
+};
+window.updateBlessPartStatus = async function(id, status) {
+  if (!isAdmin()) return;
+  const p = blessTagData().participantes[id]; if(!p) return;
+  if (db) await dbSet('bless/'+_blessTag+'/participantes/'+id, {...p,status});
+  else { blessData[_blessTag].participantes[id]={...p,status}; renderBless(); }
+};
+window.deleteBlessPart = function(id) {
+  if (!isAdmin()) return;
+  const p = blessTagData().participantes[id]||{};
+  confirm2(`Remover <strong>${esc(p.nome||'participante')}</strong> da lista?`, async()=>{
+    if(db) await dbRemove('bless/'+_blessTag+'/participantes/'+id);
+    else { delete blessData[_blessTag].participantes[id]; renderBless(); }
+    toast('Removido.','success');
+  });
+};
+window.openBlessGrupoModal = function(id) {
+  if (!isAdmin()) return;
+  _blessGrupoId = id;
+  const g = id ? (blessTagData().grupos[id]||{}) : {};
+  const membros = Array.isArray(g.membros) ? g.membros : [];
+  document.getElementById('bless-grupo-modal-title').textContent = id ? 'Editar grupo' : 'Novo grupo';
+  document.getElementById('bless-grupo-nome').value = g.nome||'';
+  const inp = document.getElementById('bless-grupo-members');
+  inp.innerHTML = '';
+  for (let i=0; i<6; i++) {
+    const row = document.createElement('div');
+    row.className = 'grupo-member-input-row';
+    row.innerHTML = `<span>${i+1}.</span><input class="form-input" placeholder="Personagem ${i+1} (opcional)" value="${esc(membros[i]||'')}" style="flex:1"/>`;
+    inp.appendChild(row);
+  }
+  document.getElementById('bless-grupo-modal').classList.add('open');
+  setTimeout(()=>document.getElementById('bless-grupo-nome').focus(),80);
+};
+window.closeBlessGrupoModal = function() { document.getElementById('bless-grupo-modal').classList.remove('open'); };
+window.saveBlessGrupo = async function() {
+  if (!isAdmin()) return;
+  const nome = (document.getElementById('bless-grupo-nome').value||'').trim();
+  if (!nome) { toast('Digite o nome do grupo','error'); return; }
+  const inputs = document.querySelectorAll('#bless-grupo-members input');
+  const membros = Array.from(inputs).map(i=>i.value.trim()).filter(Boolean);
+  const id = _blessGrupoId||Date.now().toString();
+  if (db) await dbSet('bless/'+_blessTag+'/grupos/'+id, {nome,membros});
+  else { if(!blessData[_blessTag].grupos) blessData[_blessTag].grupos={}; blessData[_blessTag].grupos[id]={nome,membros}; renderBless(); }
+  closeBlessGrupoModal();
+  toast(_blessGrupoId?'Grupo atualizado!':'Grupo criado!','success');
+};
+window.deleteBlessGrupo = function(id) {
+  if (!isAdmin()) return;
+  const g = blessTagData().grupos[id]||{};
+  confirm2(`Excluir o grupo <strong>${esc(g.nome||'')}</strong>?`, async()=>{
+    if(db) await dbRemove('bless/'+_blessTag+'/grupos/'+id);
+    else { delete blessData[_blessTag].grupos[id]; renderBless(); }
+    toast('Grupo removido.','success');
   });
 };
 
