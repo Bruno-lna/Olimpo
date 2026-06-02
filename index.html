@@ -733,6 +733,31 @@ tbody tr:hover { background: rgba(201,162,39,0.04); }
 .btn-add-char{display:inline-flex;align-items:center;gap:0.4rem;margin-top:0.3rem;background:transparent;border:1px dashed var(--gold);color:var(--gold);padding:0.4rem 0.9rem;border-radius:8px;cursor:pointer;font-size:0.85rem}
 .btn-add-char:hover{background:rgba(201,162,39,.1)}
 @media(max-width:500px){.char-row{grid-template-columns:1fr 1fr;grid-template-rows:auto auto}.btn-rm-char{grid-column:2;justify-self:end}}
+
+/* ── TRACKER ── */
+.tracker-section{width:100%;max-width:1100px;margin:2.5rem auto 0;padding:0 1rem;box-sizing:border-box}
+.tracker-title{font-family:'Cinzel Decorative',serif;color:var(--gold);font-size:1.1rem;text-align:center;letter-spacing:2px;margin-bottom:0.5rem}
+.tracker-subtitle{text-align:center;color:var(--text-dim);font-size:0.85rem;margin-bottom:1.5rem}
+.tracker-tabs{display:flex;justify-content:center;gap:0.5rem;margin-bottom:1.5rem;flex-wrap:wrap}
+.tracker-tab{background:transparent;border:1px solid var(--border);color:var(--text-dim);padding:0.35rem 1rem;border-radius:20px;cursor:pointer;font-size:0.82rem;font-family:'Cinzel',serif;letter-spacing:0.5px;transition:all .2s}
+.tracker-tab.active,.tracker-tab:hover{border-color:var(--gold);color:var(--gold);background:rgba(201,162,39,.08)}
+.tracker-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1rem}
+.tracker-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1rem 1.1rem;transition:border-color .2s}
+.tracker-card:hover{border-color:rgba(201,162,39,.4)}
+.tracker-card-header{display:flex;align-items:center;gap:0.7rem;margin-bottom:0.7rem}
+.tracker-badge{font-size:0.65rem;font-weight:700;letter-spacing:1px;padding:0.15rem 0.45rem;border-radius:4px;text-transform:uppercase}
+.badge-evento{background:rgba(33,150,243,.2);color:#64b5f6;border:1px solid rgba(33,150,243,.3)}
+.badge-boss{background:rgba(244,67,54,.2);color:#ef9a9a;border:1px solid rgba(244,67,54,.3)}
+.badge-rare{background:rgba(156,39,176,.2);color:#ce93d8;border:1px solid rgba(156,39,176,.3)}
+.tracker-name{font-family:'Cinzel',serif;font-size:0.95rem;color:var(--text);font-weight:700}
+.tracker-local{font-size:0.75rem;color:var(--text-dim);margin-top:0.1rem}
+.tracker-times{display:flex;flex-wrap:wrap;gap:0.35rem;margin-top:0.5rem}
+.tracker-time{background:rgba(201,162,39,.12);border:1px solid rgba(201,162,39,.25);color:var(--gold-light);padding:0.2rem 0.55rem;border-radius:6px;font-size:0.82rem;font-family:monospace;font-weight:600}
+.tracker-time.next{background:rgba(201,162,39,.3);border-color:var(--gold);color:#fff;box-shadow:0 0 6px rgba(201,162,39,.4)}
+.tracker-time-label{font-size:0.72rem;color:var(--text-dim);margin-top:0.4rem}
+.tracker-clock{text-align:center;color:var(--text-dim);font-size:0.8rem;margin-bottom:1rem;font-family:monospace}
+.tracker-clock span{color:var(--gold-light);font-size:1rem;font-weight:700}
+@media(max-width:600px){.tracker-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -796,6 +821,20 @@ tbody tr:hover { background: rgba(201,162,39,0.04); }
       <button class="btn btn-outline" onclick="showPage('members',document.getElementById('nav-members'))">
         Ver Membros
       </button>
+    </div>
+
+    <div class="tracker-section">
+      <div class="divider" style="margin-top:2rem;"></div>
+      <div class="tracker-title" style="margin-top:2rem;">⚔ Tracker de Boss &amp; Eventos</div>
+      <div class="tracker-subtitle">Horários de spawn do servidor NightPT · Horário de Brasília</div>
+      <div class="tracker-clock">Horário atual: <span id="tracker-clock">--:--:--</span></div>
+      <div class="tracker-tabs">
+        <button class="tracker-tab active" onclick="trackerFilter('todos',this)">Todos</button>
+        <button class="tracker-tab" onclick="trackerFilter('evento',this)">Eventos</button>
+        <button class="tracker-tab" onclick="trackerFilter('boss',this)">Boss</button>
+        <button class="tracker-tab" onclick="trackerFilter('rare',this)">Rare Elite</button>
+      </div>
+      <div class="tracker-grid" id="tracker-grid"></div>
     </div>
   </div>
 </div>
@@ -1401,6 +1440,116 @@ function initCharRows(prefix, personagens) {
   arr.forEach(c => addCharRow(prefix, c));
 }
 
+
+// ─────────────────────────────────────────────────────────
+//  TRACKER DE BOSS & EVENTOS
+// ─────────────────────────────────────────────────────────
+const TRACKER_DATA = [
+  { tipo:'evento', nome:'Arena PVP',      local:'Arena Real',               horarios:['21:30'] },
+  { tipo:'evento', nome:'Bless Castle',   local:'Bless Castle',             horarios:['16:30'] },
+  { tipo:'evento', nome:"Hell's Gate",    local:'Ponte de Ricarten',        horarios:['22:00'] },
+  { tipo:'boss',   nome:'Asure',          local:'Campo de Batalha',         horarios:['18:30','20:30','22:30'] },
+  { tipo:'rare',   nome:'Babel (Estrada)',local:'Estrada de Ferro do Caos', horarios:['00:30','04:30','08:30','12:30','16:30','20:30'] },
+  { tipo:'rare',   nome:'Babel (Perum)',  local:'Coração de Perum',         horarios:['01:30','05:30','09:30','13:30','17:30','21:30'] },
+  { tipo:'rare',   nome:'Devilshy',       local:'Torre Sem Fim 3º Andar',   horarios:['12:30','22:30'] },
+  { tipo:'rare',   nome:'Draxos',         local:'Laboratório Secreto',      horarios:['10:30','21:30'] },
+  { tipo:'rare',   nome:'Fúria',          local:'Templo Maldito 3º Andar',  horarios:['03:30','07:30','11:30','15:30','19:30','23:30'] },
+  { tipo:'rare',   nome:'Gogôrnia',       local:'Torre Sem Fim 1º Andar',   horarios:['03:30','07:30','11:30','15:30','19:30','23:30'] },
+  { tipo:'rare',   nome:'Greedy',         local:'Ilha Perdida',             horarios:['09:30','20:30'] },
+  { tipo:'rare',   nome:'Kelvezu',        local:'Caverna do Kelvezu',       horarios:['02:30','06:30','10:30','14:30','18:30','22:30'] },
+  { tipo:'rare',   nome:'Mokova',         local:'Templo Perdido',           horarios:['01:30','05:30','09:30','13:30','17:30','21:30'] },
+  { tipo:'rare',   nome:'Robô Mutante',   local:'Torre Sem Fim 2º Andar',   horarios:['00:30','04:30','08:30','12:30','16:30','20:30'] },
+  { tipo:'rare',   nome:'Tulla',          local:'Mina de Gelo',             horarios:['11:30','23:30'] },
+  { tipo:'rare',   nome:'Valento',        local:'Vale Gallubia',            horarios:['02:30','06:30','10:30','14:30','18:30','22:30'] },
+];
+
+let _trackerFilter = 'todos';
+
+function trackerNow() {
+  const now = new Date();
+  return now.getHours() * 60 + now.getMinutes();
+}
+
+function nextSpawn(horarios) {
+  const now = trackerNow();
+  const mins = horarios.map(h => {
+    const [hh, mm] = h.split(':').map(Number);
+    return hh * 60 + mm;
+  });
+  const future = mins.filter(m => m > now);
+  return future.length ? Math.min(...future) : Math.min(...mins); // próximo ou primeiro do dia
+}
+
+function renderTracker() {
+  const grid = document.getElementById('tracker-grid');
+  if (!grid) return;
+  const now = trackerNow();
+  const list = _trackerFilter === 'todos'
+    ? TRACKER_DATA
+    : TRACKER_DATA.filter(d => d.tipo === _trackerFilter);
+
+  // Sort by next spawn
+  const sorted = [...list].sort((a,b) => {
+    const diff = m => {
+      const future = m.filter(x => x > now);
+      const v = future.length ? Math.min(...future) : Math.min(...m) + 1440;
+      return v > now ? v - now : v + 1440 - now;
+    };
+    const toMin = h => { const [hh,mm] = h.split(':').map(Number); return hh*60+mm; };
+    return diff(a.horarios.map(toMin)) - diff(b.horarios.map(toMin));
+  });
+
+  const badgeMap = { evento:'badge-evento', boss:'badge-boss', rare:'badge-rare' };
+  const badgeLabel = { evento:'Evento', boss:'Boss', rare:'Rare Elite' };
+  const iconMap = { evento:'👑', boss:'💀', rare:'⚡' };
+
+  grid.innerHTML = sorted.map(d => {
+    const toMin = h => { const [hh,mm] = h.split(':').map(Number); return hh*60+mm; };
+    const mins  = d.horarios.map(toMin);
+    const future = mins.filter(m => m > now);
+    const nextMin = future.length ? Math.min(...future) : Math.min(...mins);
+    const timesHtml = d.horarios.map((h, i) => {
+      const m = toMin(h);
+      const isNext = m === nextMin && (future.length ? m > now : true);
+      return `<span class="tracker-time${isNext ? ' next' : ''}" title="${isNext ? '⏰ Próximo spawn' : ''}">${h}</span>`;
+    }).join('');
+    const diffMin = future.length ? nextMin - now : nextMin + 1440 - now;
+    const hh = Math.floor(diffMin / 60), mm = diffMin % 60;
+    const diffStr = hh > 0 ? `${hh}h ${mm}min` : `${mm}min`;
+    return `<div class="tracker-card" data-tipo="${d.tipo}">
+      <div class="tracker-card-header">
+        <div>
+          <div style="display:flex;align-items:center;gap:0.4rem;margin-bottom:0.25rem;">
+            <span class="tracker-badge ${badgeMap[d.tipo]}">${badgeLabel[d.tipo]}</span>
+          </div>
+          <div class="tracker-name">${iconMap[d.tipo]} ${esc(d.nome)}</div>
+          <div class="tracker-local">📍 ${esc(d.local)}</div>
+        </div>
+      </div>
+      <div class="tracker-time-label">⏰ Próximo em: <strong style="color:var(--gold-light)">${diffStr}</strong></div>
+      <div class="tracker-times" style="margin-top:0.4rem;">${timesHtml}</div>
+    </div>`;
+  }).join('');
+}
+
+window.trackerFilter = function(tipo, btn) {
+  _trackerFilter = tipo;
+  document.querySelectorAll('.tracker-tab').forEach(t => t.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderTracker();
+};
+
+// Clock + auto-refresh every minute
+function tickTracker() {
+  const el = document.getElementById('tracker-clock');
+  if (el) {
+    const now = new Date();
+    el.textContent = now.toLocaleTimeString('pt-BR');
+  }
+  renderTracker();
+}
+setInterval(tickTracker, 60000);
+
 // ─────────────────────────────────────────────────────────
 //  MEMBERS
 // ─────────────────────────────────────────────────────────
@@ -1616,6 +1765,8 @@ lsLoad();
 updateNavbar();
 initHome();
 initCharRows('reg', [{}]);
+renderTracker();
+tickTracker();
 renderItems();
 renderMembers();
 showPage('home', document.getElementById('nav-home'));
