@@ -774,6 +774,36 @@ tbody tr:hover { background: rgba(201,162,39,0.04); }
 .pending-user-name{color:var(--text);font-weight:600}
 .pending-user-detail{color:var(--text-dim);font-size:0.75rem;margin-top:0.1rem}
 .alert-pendente{background:rgba(255,152,0,.1);border:1px solid rgba(255,152,0,.3);color:#ffb74d;padding:0.8rem 1rem;border-radius:8px;font-size:0.9rem;text-align:center;margin-bottom:1rem}
+
+/* ── BLESS CASTLE ── */
+.bless-tabs{display:flex;gap:0.5rem;margin-bottom:1.5rem;border-bottom:1px solid var(--border);padding-bottom:0.75rem;flex-wrap:wrap}
+.bless-tab{background:transparent;border:1px solid var(--border);color:var(--text-dim);padding:0.4rem 1.2rem;border-radius:8px 8px 0 0;cursor:pointer;font-family:'Cinzel',serif;font-size:0.82rem;letter-spacing:0.5px;transition:all .2s}
+.bless-tab.active{border-color:var(--gold);border-bottom-color:var(--dark);color:var(--gold);background:var(--dark);margin-bottom:-1px}
+.bless-block{margin-bottom:2rem}
+.bless-block-title{font-family:'Cinzel',serif;color:var(--gold);font-size:0.9rem;letter-spacing:1px;text-transform:uppercase;margin-bottom:0.8rem;display:flex;align-items:center;gap:0.6rem;flex-wrap:wrap}
+.bless-estrategia-box{width:100%;min-height:90px;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:0.7rem;border-radius:8px;font-size:0.9rem;resize:vertical;box-sizing:border-box;font-family:'Crimson Text',serif;line-height:1.5}
+.bless-estrategia-box:focus{border-color:var(--gold);outline:none}
+.bless-estrategia-view{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:0.7rem 1rem;min-height:50px;color:var(--text);font-family:'Crimson Text',serif;font-size:0.95rem;line-height:1.6;white-space:pre-wrap}
+.bless-part-table{width:100%;border-collapse:collapse}
+.bless-part-table th{text-align:left;color:var(--gold);font-family:'Cinzel',serif;font-size:0.75rem;letter-spacing:0.5px;padding:0.4rem 0.6rem;border-bottom:1px solid var(--border)}
+.bless-part-table td{padding:0.4rem 0.6rem;border-bottom:1px solid rgba(255,255,255,.04);font-size:0.9rem;vertical-align:middle}
+.status-select{background:var(--surface);border:1px solid var(--border);color:var(--text);padding:0.2rem 0.5rem;border-radius:6px;font-size:0.8rem;cursor:pointer}
+.grupos-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1rem;margin-top:0.5rem}
+.grupo-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1rem}
+.grupo-card-title{font-family:'Cinzel',serif;color:var(--gold);font-size:0.85rem;margin-bottom:0.6rem;display:flex;justify-content:space-between;align-items:center;gap:0.4rem}
+.grupo-member-list{list-style:none;padding:0;margin:0}
+.grupo-member-list li{padding:0.25rem 0;color:var(--text);font-size:0.88rem;border-bottom:1px solid rgba(255,255,255,.04)}
+.grupo-member-list li:last-child{border-bottom:none}
+.grupo-member-list li.empty-slot{color:var(--text-dim);font-size:0.8rem;font-style:italic}
+.grupo-actions{display:flex;gap:0.3rem}
+.bless-modal{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:none;align-items:center;justify-content:center}
+.bless-modal.open{display:flex}
+.bless-modal-box{background:#18171c;border:1px solid var(--gold);border-radius:12px;padding:1.5rem;width:90%;max-width:460px;max-height:90vh;overflow-y:auto}
+.bless-modal-title{font-family:'Cinzel Decorative',serif;color:var(--gold);font-size:1rem;margin-bottom:1rem}
+.grupo-member-inputs{display:flex;flex-direction:column;gap:0.4rem}
+.grupo-member-input-row{display:grid;grid-template-columns:1.5rem 1fr;gap:0.5rem;align-items:center}
+.grupo-member-input-row span{color:var(--text-dim);font-size:0.8rem;text-align:right}
+@media(max-width:500px){.grupos-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -785,6 +815,7 @@ tbody tr:hover { background: rgba(201,162,39,0.04); }
     <li><a href="#" id="nav-home"    onclick="showPage('home',this);return false;">Início</a></li>
     <li><a href="#" id="nav-members" onclick="showPage('members',this);return false;">Membros</a></li>
     <li id="li-nav-items"><a href="#" id="nav-items"   onclick="showPage('items',this);return false;">Itens Boss</a></li>
+    <li id="li-nav-bless" style="display:none"><a href="#" id="nav-bless" onclick="showPage('bless',this);return false;">🏰 Bless</a></li>
     <li><a href="#" id="nav-server"  onclick="showPage('server',this);return false;">Servidor</a></li>
     <li id="li-nav-cadastro"><a href="#" id="nav-cadastro" onclick="showPage('cadastro',this);return false;">Cadastrar</a></li>
     <li id="li-nav-login"><a href="#" id="nav-login" onclick="showPage('login',this);return false;">Entrar</a></li>
@@ -937,6 +968,65 @@ tbody tr:hover { background: rgba(201,162,39,0.04); }
   </div>
 </div>
 
+
+
+<!-- ══════════════ BLESS CASTLE ══════════════ -->
+<div id="page-bless" class="page">
+  <div class="section-wrap">
+    <div class="section-header">
+      <div class="section-title">🏰 Bless Castle</div>
+      <div class="section-sub">Organização do evento — editado pelos Líderes</div>
+    </div>
+    <div class="bless-tabs">
+      <button class="bless-tab active" onclick="switchBlessTag('principal',this)">⚔ Tag Principal</button>
+      <button class="bless-tab"        onclick="switchBlessTag('sub',this)">🛡 Sub Tag</button>
+    </div>
+    <div id="bless-content"></div>
+  </div>
+</div>
+
+<!-- Bless: modal grupo -->
+<div class="bless-modal" id="bless-grupo-modal">
+  <div class="bless-modal-box">
+    <div class="bless-modal-title" id="bless-grupo-modal-title">Grupo</div>
+    <div class="form-group">
+      <label class="form-label">Nome do grupo</label>
+      <input class="form-input" id="bless-grupo-nome" placeholder="Ex: Grupo 1"/>
+    </div>
+    <div style="margin-top:1rem;">
+      <label class="form-label" style="display:block;margin-bottom:0.5rem;">Membros (máx. 6)</label>
+      <div class="grupo-member-inputs" id="bless-grupo-members"></div>
+    </div>
+    <div style="display:flex;gap:0.7rem;margin-top:1rem;flex-wrap:wrap;">
+      <button class="btn btn-gold btn-sm" onclick="saveBlessGrupo()">💾 Salvar grupo</button>
+      <button class="btn btn-outline btn-sm" onclick="closeBlessGrupoModal()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Bless: modal participante -->
+<div class="bless-modal" id="bless-part-modal">
+  <div class="bless-modal-box">
+    <div class="bless-modal-title" id="bless-part-modal-title">Participante</div>
+    <div class="form-group">
+      <label class="form-label">Nome do personagem</label>
+      <input class="form-input" id="bless-part-nome" placeholder="Nome do personagem"
+        onkeydown="if(event.key==='Enter')saveBlessPart()"/>
+    </div>
+    <div class="form-group" style="margin-top:0.8rem;">
+      <label class="form-label">Status</label>
+      <select class="form-select" id="bless-part-status">
+        <option value="a-confirmar">⏳ A confirmar</option>
+        <option value="confirmado">✔ Confirmado</option>
+      </select>
+    </div>
+    <div style="display:flex;gap:0.7rem;margin-top:1rem;">
+      <button class="btn btn-gold btn-sm" onclick="saveBlessPart()">💾 Salvar</button>
+      <button class="btn btn-outline btn-sm" onclick="closeBlessPartModal()">Cancelar</button>
+    </div>
+    <input type="hidden" id="bless-part-editing-id"/>
+  </div>
+</div>
 
 <!-- ══════════════ LOGIN ══════════════ -->
 <div id="page-login" class="page">
@@ -1149,6 +1239,18 @@ async function initFirebase() {
       renderItems();
     });
 
+    onValue(ref(db, 'bless'), snap => {
+      const empty = { participantes:{}, grupos:{}, estrategia:'' };
+      if (snap.exists()) {
+        const v = snap.val();
+        blessData.principal = v.principal || {...empty};
+        blessData.sub       = v.sub       || {...empty};
+      } else {
+        blessData = { principal:{...empty}, sub:{...empty} };
+      }
+      renderBless();
+    });
+
     toast('Firebase conectado!', 'success');
   } catch(e) {
     console.error(e);
@@ -1185,7 +1287,7 @@ window.showPage = function(id, linkEl) {
     const navEl = document.getElementById('nav-' + id);
     if (navEl) navEl.classList.add('active');
   }
-  if (id === 'items' && (!currentUser || currentUser.status === 'pendente')) {
+  if ((id === 'items' || id === 'bless') && (!currentUser || currentUser.status === 'pendente')) {
     showPage('login', document.getElementById('nav-login'));
     if (currentUser?.status === 'pendente') toast('Seu cadastro ainda está aguardando aprovação.', 'error');
     return;
@@ -1253,6 +1355,7 @@ function updateNavbar() {
   document.getElementById('li-nav-perfil').style.display   = loggedIn ? ''     : 'none';
   document.getElementById('li-nav-sair').style.display     = loggedIn ? ''     : 'none';
   document.getElementById('li-nav-items').style.display    = ativo    ? ''     : 'none';
+  if(document.getElementById('li-nav-bless')) document.getElementById('li-nav-bless').style.display = ativo ? '' : 'none';
 }
 
 window.doLogin = async function() {
@@ -1875,6 +1978,7 @@ initHome();
 initCharRows('reg', [{}]);
 renderTracker();
 tickTracker();
+renderBless();
 renderItems();
 renderMembers();
 showPage('home', document.getElementById('nav-home'));
