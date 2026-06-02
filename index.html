@@ -758,6 +758,22 @@ tbody tr:hover { background: rgba(201,162,39,0.04); }
 .tracker-clock{text-align:center;color:var(--text-dim);font-size:0.8rem;margin-bottom:1rem;font-family:monospace}
 .tracker-clock span{color:var(--gold-light);font-size:1rem;font-weight:700}
 @media(max-width:600px){.tracker-grid{grid-template-columns:1fr}}
+
+/* ── APROVAÇÃO ── */
+.badge-pendente{background:rgba(255,152,0,.15);color:#ffb74d;border:1px solid rgba(255,152,0,.35)}
+.pending-section{margin-top:1.5rem;padding:1rem;background:rgba(255,152,0,.05);border:1px solid rgba(255,152,0,.2);border-radius:10px}
+.pending-title{font-family:'Cinzel',serif;color:#ffb74d;font-size:0.85rem;letter-spacing:1px;margin-bottom:0.8rem;display:flex;align-items:center;gap:0.4rem}
+.pending-count{background:#ffb74d;color:#000;font-size:0.7rem;font-weight:700;padding:0.1rem 0.4rem;border-radius:10px}
+.btn-approve{background:rgba(76,175,80,.2);border:1px solid #4caf50;color:#81c784;border-radius:6px;padding:0.25rem 0.6rem;cursor:pointer;font-size:0.8rem}
+.btn-approve:hover{background:rgba(76,175,80,.35)}
+.btn-reject{background:rgba(229,115,115,.15);border:1px solid #e57373;color:#e57373;border-radius:6px;padding:0.25rem 0.6rem;cursor:pointer;font-size:0.8rem;margin-left:0.3rem}
+.btn-reject:hover{background:rgba(229,115,115,.3)}
+.pending-user-row{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.5rem;padding:0.6rem 0;border-bottom:1px solid rgba(255,255,255,.06)}
+.pending-user-row:last-child{border-bottom:none}
+.pending-user-info{font-size:0.85rem}
+.pending-user-name{color:var(--text);font-weight:600}
+.pending-user-detail{color:var(--text-dim);font-size:0.75rem;margin-top:0.1rem}
+.alert-pendente{background:rgba(255,152,0,.1);border:1px solid rgba(255,152,0,.3);color:#ffb74d;padding:0.8rem 1rem;border-radius:8px;font-size:0.9rem;text-align:center;margin-bottom:1rem}
 </style>
 </head>
 <body>
@@ -768,7 +784,7 @@ tbody tr:hover { background: rgba(201,162,39,0.04); }
   <ul class="nav-links" id="nav-links">
     <li><a href="#" id="nav-home"    onclick="showPage('home',this);return false;">Início</a></li>
     <li><a href="#" id="nav-members" onclick="showPage('members',this);return false;">Membros</a></li>
-    <li><a href="#" id="nav-items"   onclick="showPage('items',this);return false;">Itens Boss</a></li>
+    <li id="li-nav-items"><a href="#" id="nav-items"   onclick="showPage('items',this);return false;">Itens Boss</a></li>
     <li><a href="#" id="nav-server"  onclick="showPage('server',this);return false;">Servidor</a></li>
     <li id="li-nav-cadastro"><a href="#" id="nav-cadastro" onclick="showPage('cadastro',this);return false;">Cadastrar</a></li>
     <li id="li-nav-login"><a href="#" id="nav-login" onclick="showPage('login',this);return false;">Entrar</a></li>
@@ -1169,6 +1185,11 @@ window.showPage = function(id, linkEl) {
     const navEl = document.getElementById('nav-' + id);
     if (navEl) navEl.classList.add('active');
   }
+  if (id === 'items' && (!currentUser || currentUser.status === 'pendente')) {
+    showPage('login', document.getElementById('nav-login'));
+    if (currentUser?.status === 'pendente') toast('Seu cadastro ainda está aguardando aprovação.', 'error');
+    return;
+  }
   if (id === 'server') loadServerIframe();
   if (id === 'perfil') {
     if (!currentUser) { showPage('login', document.getElementById('nav-login')); return; }
@@ -1207,8 +1228,9 @@ function initHome() {
 }
 
 function updateHomeStats() {
-  const active = users.filter(u => u.cargo !== 'Inativo').length;
-  document.getElementById('stat-members').textContent = users.length || '0';
+  const ativos = users.filter(u => u.status !== 'pendente');
+  const active = ativos.filter(u => u.cargo !== 'Inativo').length;
+  document.getElementById('stat-members').textContent = ativos.length || '0';
   document.getElementById('stat-active').textContent  = active || '0';
   document.getElementById('stat-items').textContent   = ITEMS.length;
 }
@@ -1225,10 +1247,12 @@ function isAdmin() { return currentUser?.cargo === 'Líder'; }
 
 function updateNavbar() {
   const loggedIn = !!currentUser;
+  const ativo    = loggedIn && currentUser.status !== 'pendente';
   document.getElementById('li-nav-cadastro').style.display = loggedIn ? 'none' : '';
   document.getElementById('li-nav-login').style.display    = loggedIn ? 'none' : '';
   document.getElementById('li-nav-perfil').style.display   = loggedIn ? ''     : 'none';
   document.getElementById('li-nav-sair').style.display     = loggedIn ? ''     : 'none';
+  document.getElementById('li-nav-items').style.display    = ativo    ? ''     : 'none';
 }
 
 window.doLogin = async function() {
@@ -1238,12 +1262,16 @@ window.doLogin = async function() {
   const hash = await hashPassword(senha);
   const user = users.find(u => u.login === login && u.senhaHash === hash);
   if (!user) { toast('Login ou senha incorretos', 'error'); return; }
+  if (user.status === 'pendente') {
+    toast('Seu cadastro está aguardando aprovação do administrador.', 'error'); return;
+  }
   currentUser = user;
   localStorage.setItem(LS_SESSION, JSON.stringify(user));
   updateNavbar();
   renderMembers();
   updateHomeStats();
-  toast(`Bem-vindo, ${user.personagem || user.nome}!`, 'success');
+  const firstName = (Array.isArray(user.personagens)&&user.personagens[0]?.personagem) || user.nome;
+  toast(`Bem-vindo, ${firstName}!`, 'success');
   showPage('home', document.getElementById('nav-home'));
 };
 
@@ -1285,8 +1313,10 @@ window.doRegister = async function() {
 
   try {
     const senhaHash = await hashPassword(senha);
-    const cargo = users.length === 0 ? 'Líder' : 'Recruta';
-    const user  = { id: Date.now().toString(), nome, whatsapp, personagens, login, senhaHash, cargo, createdAt: Date.now() };
+    const isFirst  = users.length === 0;
+    const cargo    = isFirst ? 'Líder'  : 'Recruta';
+    const status   = isFirst ? 'ativo'  : 'pendente';
+    const user  = { id: Date.now().toString(), nome, whatsapp, personagens, login, senhaHash, cargo, status, createdAt: Date.now() };
 
     if (db) {
       await dbSet('users/' + user.id, user);
@@ -1297,15 +1327,20 @@ window.doRegister = async function() {
       updateHomeStats();
     }
 
-    currentUser = user;
-    localStorage.setItem(LS_SESSION, JSON.stringify(user));
-    updateNavbar();
-    toast(`Cadastro realizado! Bem-vindo, ${personagens[0]?.personagem || nome}!`, 'success');
+    if (isFirst) {
+      currentUser = user;
+      localStorage.setItem(LS_SESSION, JSON.stringify(user));
+      updateNavbar();
+      toast(`Cadastro realizado! Bem-vindo, ${personagens[0]?.personagem || nome}!`, 'success');
+    } else {
+      toast('Cadastro enviado! Aguarde a aprovação do administrador para acessar.', 'success');
+    }
     ['reg-nome','reg-whatsapp','reg-login','reg-senha','reg-senha2'].forEach(id => {
       const el = document.getElementById(id); if (el) el.value = '';
     });
     initCharRows('reg', [{}]);
     showPage('home', document.getElementById('nav-home'));
+    if (!isFirst) currentUser = null; // não loga automaticamente quem está pendente
   } finally {
     _registering = false;
     if (btn) { btn.disabled = false; btn.textContent = 'Criar conta'; }
@@ -1364,7 +1399,8 @@ window.adminDeleteUser = function(userId) {
   if (!isAdmin()) return;
   const user = users.find(u => u.id === userId);
   if (!user) return;
-  confirm2(`Remover <strong>${esc(user.personagem)}</strong> do clã?`, async () => {
+  const nome = (Array.isArray(user.personagens)&&user.personagens[0]?.personagem)||user.nome||'usuário';
+  confirm2(`Remover <strong>${esc(nome)}</strong> do clã?`, async () => {
     if (db) {
       await dbRemove('users/' + userId);
     } else {
@@ -1374,6 +1410,40 @@ window.adminDeleteUser = function(userId) {
       updateHomeStats();
     }
     toast('Membro removido.', 'success');
+  });
+};
+
+window.adminApproveUser = async function(userId) {
+  if (!isAdmin()) return;
+  const user = users.find(u => u.id === userId);
+  if (!user) return;
+  const updated = { ...user, status: 'ativo' };
+  if (db) {
+    await dbSet('users/' + userId, updated);
+  } else {
+    const idx = users.findIndex(u => u.id === userId);
+    if (idx >= 0) users[idx] = updated;
+    lsSaveUsers();
+    renderMembers();
+  }
+  const nome = (Array.isArray(user.personagens)&&user.personagens[0]?.personagem)||user.nome||'usuário';
+  toast(`${esc(nome)} aprovado!`, 'success');
+};
+
+window.adminRejectUser = function(userId) {
+  if (!isAdmin()) return;
+  const user = users.find(u => u.id === userId);
+  if (!user) return;
+  const nome = (Array.isArray(user.personagens)&&user.personagens[0]?.personagem)||user.nome||'usuário';
+  confirm2(`Recusar e remover o cadastro de <strong>${esc(nome)}</strong>?`, async () => {
+    if (db) {
+      await dbRemove('users/' + userId);
+    } else {
+      users = users.filter(u => u.id !== userId);
+      lsSaveUsers();
+      renderMembers();
+    }
+    toast('Cadastro recusado e removido.', 'success');
   });
 };
 
@@ -1559,11 +1629,49 @@ window.sortMembers = function(key) {
   renderMembers();
 };
 
+function renderPendentes(pendentes) {
+  let sec = document.getElementById('pending-section');
+  if (!pendentes.length) { if (sec) sec.remove(); return; }
+  if (!sec) {
+    sec = document.createElement('div');
+    sec.id = 'pending-section';
+    sec.className = 'pending-section';
+    const wrap = document.querySelector('#page-members .section-wrap');
+    if (wrap) wrap.insertBefore(sec, wrap.firstChild);
+  }
+  sec.innerHTML = `<div class="pending-title">
+    ⏳ Cadastros aguardando aprovação <span class="pending-count">${pendentes.length}</span>
+  </div>` + pendentes.map(u => {
+    const nome = (Array.isArray(u.personagens)&&u.personagens[0]?.personagem)||u.nome||'–';
+    const chars = Array.isArray(u.personagens) ? u.personagens.map(p=>p.personagem).join(', ') : '';
+    const wa = u.whatsapp
+      ? `<a href="https://wa.me/55${(u.whatsapp||'').replace(/\D/g,'')}" target="_blank"
+             rel="noopener" style="color:var(--gold-light)">📱 ${esc(u.whatsapp)}</a>`
+      : '';
+    return `<div class="pending-user-row">
+      <div class="pending-user-info">
+        <div class="pending-user-name">👤 ${esc(nome)}</div>
+        <div class="pending-user-detail">${esc(u.nome||'')} · ${wa}</div>
+        ${chars ? `<div class="pending-user-detail">Personagens: ${esc(chars)}</div>` : ''}
+      </div>
+      <div>
+        <button class="btn-approve" onclick="adminApproveUser('${u.id}')">✔ Aprovar</button>
+        <button class="btn-reject"  onclick="adminRejectUser('${u.id}')">✕ Recusar</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
 function renderMembers() {
   const q   = (document.getElementById('member-search')?.value || '').toLowerCase();
   const adm = isAdmin();
 
+  // Pendentes: só admin vê, fora da tabela principal
+  const pendentes = adm ? users.filter(u => u.status === 'pendente') : [];
+  renderPendentes(pendentes);
+
   let list = users.filter(u => {
+    if (u.status === 'pendente') return false; // nunca na tabela principal
     const ps = Array.isArray(u.personagens) ? u.personagens : [{personagem:u.personagem||'',classe:u.classe||''}];
     return (u.cargo||'').toLowerCase().includes(q) ||
            (u.nome ||'').toLowerCase().includes(q) ||
