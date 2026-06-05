@@ -796,6 +796,16 @@ tbody tr:hover { background: rgba(201,162,39,0.04); }
 .grupo-member-list li:last-child{border-bottom:none}
 .grupo-member-list li.empty-slot{color:var(--text-dim);font-size:0.8rem;font-style:italic}
 .grupo-actions{display:flex;gap:0.3rem}
+.char-selector-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:0.45rem;max-height:260px;overflow-y:auto;margin-top:0.5rem;padding-right:2px}
+.char-selector-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:0.45rem 0.65rem;cursor:pointer;transition:border-color .15s,background .15s}
+.char-selector-card:hover{border-color:var(--gold-light)}
+.char-selector-card.selected{border-color:var(--gold);background:rgba(201,162,39,.14)}
+.char-selector-card.own{border:1.5px solid rgba(201,162,39,.5);background:rgba(201,162,39,.06)}
+.char-selector-card.own.selected{border-color:var(--gold);background:rgba(201,162,39,.18)}
+.cs-name{font-weight:600;color:var(--text);font-size:0.87rem}
+.cs-info{color:var(--text-dim);font-size:0.73rem;margin-top:0.1rem}
+.cs-owner{color:var(--gold-light);font-size:0.7rem;font-style:italic;margin-top:0.1rem}
+.bless-count{font-size:0.8rem;color:var(--text-dim);margin-left:0.35rem;font-family:sans-serif;font-weight:400;letter-spacing:0}
 .bless-modal{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:none;align-items:center;justify-content:center}
 .bless-modal.open{display:flex}
 .bless-modal-box{background:#18171c;border:1px solid var(--gold);border-radius:12px;padding:1.5rem;width:90%;max-width:460px;max-height:90vh;overflow-y:auto}
@@ -1004,23 +1014,26 @@ tbody tr:hover { background: rgba(201,162,39,0.04); }
   </div>
 </div>
 
-<!-- Bless: modal participante -->
+<!-- Bless: modal participante/falta -->
 <div class="bless-modal" id="bless-part-modal">
   <div class="bless-modal-box">
     <div class="bless-modal-title" id="bless-part-modal-title">Participante</div>
     <div class="form-group">
-      <label class="form-label">Nome do personagem</label>
-      <input class="form-input" id="bless-part-nome" placeholder="Nome do personagem"
-        onkeydown="if(event.key==='Enter')saveBlessPart()"/>
+      <label class="form-label">Selecione o personagem</label>
+      <div class="char-selector-grid" id="bless-char-grid"></div>
+      <input type="hidden" id="bless-part-selected-char"/>
+      <input type="hidden" id="bless-part-selected-userId"/>
+      <input type="hidden" id="bless-part-selected-classe"/>
+      <input type="hidden" id="bless-part-selected-nivel"/>
     </div>
-    <div class="form-group" style="margin-top:0.8rem;">
+    <div class="form-group" style="margin-top:0.8rem;" id="bless-part-status-wrap">
       <label class="form-label">Status</label>
       <select class="form-select" id="bless-part-status">
         <option value="a-confirmar">⏳ A confirmar</option>
         <option value="confirmado">✔ Confirmado</option>
       </select>
     </div>
-    <div style="display:flex;gap:0.7rem;margin-top:1rem;">
+    <div style="display:flex;gap:0.7rem;margin-top:1rem;flex-wrap:wrap;">
       <button class="btn btn-gold btn-sm" onclick="saveBlessPart()">💾 Salvar</button>
       <button class="btn btn-outline btn-sm" onclick="closeBlessPartModal()">Cancelar</button>
     </div>
@@ -1178,7 +1191,8 @@ const LOGO_SRC = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1B
 // ─────────────────────────────────────────────────────────
 let users     = [];  // { id, nome, whatsapp, personagens, login, senhaHash, cargo, status, createdAt }
 let itemData  = {};  // { [itemId]: { characters: {} } }
-let blessData = { principal:{participantes:{},grupos:{},estrategia:''}, sub:{participantes:{},grupos:{},estrategia:''} };
+let blessData = { principal:{participantes:{},faltas:{},grupos:{},estrategia:''}, sub:{participantes:{},faltas:{},grupos:{},estrategia:''} };
+let _blessListType = 'participantes';
 let sortKey   = 'personagem';
 let sortDir   = 1;
 let db        = null;
@@ -1241,13 +1255,13 @@ async function initFirebase() {
     });
 
     onValue(ref(db, 'bless'), snap => {
-      const empty = { participantes:{}, grupos:{}, estrategia:'' };
+      const emptyTag = { participantes:{}, faltas:{}, grupos:{}, estrategia:'' };
       if (snap.exists()) {
         const v = snap.val();
-        blessData.principal = v.principal || {...empty};
-        blessData.sub       = v.sub       || {...empty};
+        blessData.principal = v.principal ? {...emptyTag,...v.principal} : {...emptyTag};
+        blessData.sub       = v.sub       ? {...emptyTag,...v.sub}       : {...emptyTag};
       } else {
-        blessData = { principal:{...empty}, sub:{...empty} };
+        blessData = { principal:{...emptyTag}, sub:{...emptyTag} };
       }
       renderBless();
     });
@@ -1939,9 +1953,73 @@ window.switchBlessTag = function(tag, btn) {
 };
 
 function blessTagData() {
-  const empty = { participantes:{}, grupos:{}, estrategia:'' };
+  const empty = { participantes:{}, faltas:{}, grupos:{}, estrategia:'' };
   return blessData[_blessTag] || empty;
 }
+
+function getMyChars() {
+  if (!currentUser) return [];
+  const ps = Array.isArray(currentUser.personagens) ? currentUser.personagens
+           : (currentUser.personagem ? [{personagem:currentUser.personagem,classe:currentUser.classe||'',nivel:currentUser.nivel||''}] : []);
+  return ps.filter(p => p && p.personagem);
+}
+
+function buildCharGrid(alreadyIn, editingNome) {
+  const adm     = isAdmin();
+  const myChars = getMyChars();
+  const myNames = new Set(myChars.map(c => c.personagem));
+  let chars = [];
+
+  if (adm) {
+    users.filter(u => u.status === 'ativo').forEach(u => {
+      const ps = Array.isArray(u.personagens) ? u.personagens
+               : (u.personagem ? [{personagem:u.personagem,classe:u.classe||'',nivel:u.nivel||''}] : []);
+      ps.filter(p => p && p.personagem).forEach(p => {
+        chars.push({ nome:p.personagem, classe:p.classe||'', nivel:p.nivel||'',
+                     userId:u.id, userName:u.nome||'', isOwn:myNames.has(p.personagem) });
+      });
+    });
+  } else {
+    myChars.forEach(p => chars.push({
+      nome:p.personagem, classe:p.classe||'', nivel:p.nivel||'',
+      userId:currentUser.id, userName:currentUser.nome||'', isOwn:true
+    }));
+  }
+
+  // Filter out already-added chars (but keep the one being edited)
+  chars = chars.filter(c => !alreadyIn.has(c.nome) || c.nome === editingNome);
+
+  if (!chars.length) {
+    return '<div style="color:var(--text-dim);font-size:0.85rem;padding:0.5rem 0">Nenhum personagem disponível para adicionar.</div>';
+  }
+
+  return chars.map(c => {
+    const cls = 'char-selector-card' + (c.isOwn ? ' own' : '');
+    const ownerLine = adm
+      ? (c.isOwn
+          ? '<div class="cs-owner">⭐ Seu personagem</div>'
+          : `<div class="cs-owner">👤 ${esc(c.userName)}</div>`)
+      : '';
+    const safeNome  = c.nome.replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    const safeClass = c.classe.replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    const safeNivel = (c.nivel||'').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    const safeUID   = c.userId.replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    return `<div class="${cls}" onclick="selectBlessChar(this,'${safeNome}','${safeUID}','${safeClass}','${safeNivel}')" data-nome="${esc(c.nome)}">
+      <div class="cs-name">${esc(c.nome)}</div>
+      <div class="cs-info">${esc(c.classe)}${c.nivel?' · Nv '+esc(c.nivel):''}</div>
+      ${ownerLine}
+    </div>`;
+  }).join('');
+}
+
+window.selectBlessChar = function(el, nome, userId, classe, nivel) {
+  document.querySelectorAll('#bless-char-grid .char-selector-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('bless-part-selected-char').value   = nome;
+  document.getElementById('bless-part-selected-userId').value = userId;
+  document.getElementById('bless-part-selected-classe').value = classe;
+  document.getElementById('bless-part-selected-nivel').value  = nivel;
+};
 
 function renderBless() {
   const el = document.getElementById('bless-content');
@@ -1949,9 +2027,11 @@ function renderBless() {
   const adm  = isAdmin();
   const data = blessTagData();
   const parts  = data.participantes || {};
+  const faltas = data.faltas        || {};
   const grupos = data.grupos        || {};
   const estr   = data.estrategia    || '';
 
+  // ── Estratégia ──
   const estrategiaHtml = adm
     ? `<textarea class="bless-estrategia-box" id="bless-estr-${_blessTag}"
           placeholder="Descreva a estratégia do clã para este evento..."></textarea>
@@ -1960,7 +2040,14 @@ function renderBless() {
         ? esc(estr)
         : '<span style="color:var(--text-dim);font-style:italic">Nenhuma estratégia definida.</span>'}</div>`;
 
+  // ── Participantes ──
   const partEntries = Object.entries(parts).sort((a,b) => (a[1].nome||'').localeCompare(b[1].nome||''));
+  const partCount   = partEntries.length;
+  const myCharNames = new Set(getMyChars().map(c => c.personagem));
+  const inPart      = new Set(partEntries.map(([,p]) => p.nome));
+  const inFalta     = new Set(Object.values(faltas).map(f => f.nome));
+  const canAddPart  = currentUser && (adm || [...myCharNames].some(n => !inPart.has(n)));
+
   const partRows = partEntries.map(([id, p]) => {
     const isConf = p.status === 'confirmado';
     const statusSel = adm
@@ -1972,26 +2059,44 @@ function renderBless() {
       : `<span style="font-size:0.82rem;padding:0.15rem 0.5rem;border-radius:6px;${isConf
           ?'background:rgba(76,175,80,.15);color:#81c784;border:1px solid #4caf50'
           :'background:rgba(255,152,0,.12);color:#ffb74d;border:1px solid #ff9800'}">${isConf?'✔ Confirmado':'⏳ A confirmar'}</span>`;
-    const actions = adm
-      ? `<td><div class="actions-cell">
-           <button class="btn btn-outline btn-sm" onclick="openBlessPartModal('${id}')">✏️</button>
-           <button class="btn btn-danger btn-sm"  onclick="deleteBlessPart('${id}')">🗑</button>
-         </div></td>` : '';
-    return `<tr><td><strong>${esc(p.nome||'–')}</strong></td><td>${statusSel}</td>${actions}</tr>`;
+    const canDel  = adm || (currentUser && p.userId === currentUser.id);
+    const editBtn = adm ? `<button class="btn btn-outline btn-sm" onclick="openBlessPartModal('${id}','participantes')">✏️</button>` : '';
+    const delBtn  = canDel ? `<button class="btn btn-danger btn-sm" onclick="deleteBlessList('participantes','${id}')">🗑</button>` : '';
+    const acoes   = (editBtn||delBtn) ? `<td><div class="actions-cell">${editBtn}${delBtn}</div></td>` : '<td></td>';
+    const classeSpan = p.classe ? ` <span style="color:var(--text-dim);font-size:0.79rem">· ${esc(p.classe)}</span>` : '';
+    return `<tr><td><strong>${esc(p.nome||'–')}</strong>${classeSpan}</td><td>${statusSel}</td>${acoes}</tr>`;
   }).join('');
 
   const partTable = `<div class="members-table-wrap"><table class="bless-part-table">
-    <thead><tr><th>Personagem</th><th>Status</th>${adm?'<th>Ações</th>':''}</tr></thead>
-    <tbody>${partRows||`<tr><td colspan="${adm?3:2}" style="color:var(--text-dim);text-align:center;padding:1rem;">Nenhum participante cadastrado.</td></tr>`}</tbody>
+    <thead><tr><th>Personagem</th><th>Status</th><th></th></tr></thead>
+    <tbody>${partRows||`<tr><td colspan="3" style="color:var(--text-dim);text-align:center;padding:1rem;">Nenhum participante cadastrado.</td></tr>`}</tbody>
   </table></div>`;
 
-  const grupoEntries = Object.entries(grupos).sort((a,b)=>(a[1].nome||'').localeCompare(b[1].nome||''));
+  // ── Faltas ──
+  const faltaEntries = Object.entries(faltas).sort((a,b) => (a[1].nome||'').localeCompare(b[1].nome||''));
+  const faltaCount   = faltaEntries.length;
+  const canAddFalta  = currentUser && (adm || [...myCharNames].some(n => !inFalta.has(n)));
+
+  const faltaRows = faltaEntries.map(([id, f]) => {
+    const canDel  = adm || (currentUser && f.userId === currentUser.id);
+    const editBtn = adm ? `<button class="btn btn-outline btn-sm" onclick="openBlessPartModal('${id}','faltas')">✏️</button>` : '';
+    const delBtn  = canDel ? `<button class="btn btn-danger btn-sm" onclick="deleteBlessList('faltas','${id}')">🗑</button>` : '';
+    const acoes   = (editBtn||delBtn) ? `<td><div class="actions-cell">${editBtn}${delBtn}</div></td>` : '<td></td>';
+    const classeSpan = f.classe ? ` <span style="color:var(--text-dim);font-size:0.79rem">· ${esc(f.classe)}</span>` : '';
+    return `<tr><td><strong>${esc(f.nome||'–')}</strong>${classeSpan}</td>${acoes}</tr>`;
+  }).join('');
+
+  const faltaTable = `<div class="members-table-wrap"><table class="bless-part-table">
+    <thead><tr><th>Personagem</th><th></th></tr></thead>
+    <tbody>${faltaRows||`<tr><td colspan="2" style="color:var(--text-dim);text-align:center;padding:1rem;">Nenhuma falta registrada.</td></tr>`}</tbody>
+  </table></div>`;
+
+  // ── Grupos ──
+  const grupoEntries = Object.entries(grupos).sort((a,b) => (a[1].nome||'').localeCompare(b[1].nome||''));
   const grupoCards = grupoEntries.map(([id, g]) => {
     const membros = (Array.isArray(g.membros) ? g.membros : []).filter(Boolean);
     const items = Array(6).fill(null).map((_,i) =>
-      membros[i]
-        ? `<li>⚔ ${esc(membros[i])}</li>`
-        : `<li class="empty-slot">— vazio —</li>`).join('');
+      membros[i] ? `<li>⚔ ${esc(membros[i])}</li>` : `<li class="empty-slot">— vazio —</li>`).join('');
     const actions = adm
       ? `<div class="grupo-actions">
            <button class="btn btn-outline btn-sm" onclick="openBlessGrupoModal('${id}')">✏️</button>
@@ -2011,9 +2116,14 @@ function renderBless() {
       </div>${estrategiaHtml}
     </div>
     <div class="bless-block">
-      <div class="bless-block-title">👥 Participantes
-        ${adm?`<button class="btn btn-gold btn-sm" onclick="openBlessPartModal(null)">+ Adicionar</button>`:''}
+      <div class="bless-block-title">👥 Participantes <span class="bless-count">(${partCount})</span>
+        ${canAddPart ? `<button class="btn btn-gold btn-sm" onclick="openBlessPartModal(null,'participantes')">${adm?'+ Adicionar':'+ Entrar'}</button>` : ''}
       </div>${partTable}
+    </div>
+    <div class="bless-block">
+      <div class="bless-block-title">❌ Falta <span class="bless-count">(${faltaCount})</span>
+        ${canAddFalta ? `<button class="btn btn-gold btn-sm" onclick="openBlessPartModal(null,'faltas')">${adm?'+ Adicionar':'+ Registrar falta'}</button>` : ''}
+      </div>${faltaTable}
     </div>
     <div class="bless-block">
       <div class="bless-block-title">⚔ Grupos
@@ -2036,45 +2146,99 @@ window.saveBlessEstrategia = async function() {
   toast('Estratégia salva!', 'success');
 };
 
-window.openBlessPartModal = function(id) {
-  if (!isAdmin()) return;
-  _blessPartId = id;
-  const p = id ? (blessTagData().participantes[id]||{}) : {};
-  document.getElementById('bless-part-modal-title').textContent = id ? 'Editar participante' : 'Adicionar participante';
-  document.getElementById('bless-part-nome').value = p.nome||'';
-  document.getElementById('bless-part-status').value = p.status||'a-confirmar';
+window.openBlessPartModal = function(id, listType) {
+  if (!currentUser) return;
+  _blessPartId   = id;
+  _blessListType = listType || 'participantes';
+  const isFalta  = _blessListType === 'faltas';
+  const list     = blessTagData()[_blessListType] || {};
+  const p        = id ? (list[id]||{}) : {};
+
+  // Non-admin cannot edit someone else's entry
+  if (id && !isAdmin() && p.userId !== currentUser.id) return;
+
+  const alreadyIn = new Set(Object.values(list).map(e => e.nome));
+  if (id && p.nome) alreadyIn.delete(p.nome); // allow re-selecting the entry being edited
+
+  document.getElementById('bless-part-modal-title').textContent =
+    isFalta ? (id ? 'Editar falta' : 'Registrar falta')
+            : (id ? 'Editar participante' : 'Adicionar participante');
+
+  document.getElementById('bless-part-status-wrap').style.display = isFalta ? 'none' : '';
+  if (!isFalta) document.getElementById('bless-part-status').value = p.status||'a-confirmar';
+
   document.getElementById('bless-part-editing-id').value = id||'';
+  document.getElementById('bless-part-selected-char').value   = p.nome||'';
+  document.getElementById('bless-part-selected-userId').value = p.userId||'';
+  document.getElementById('bless-part-selected-classe').value = p.classe||'';
+  document.getElementById('bless-part-selected-nivel').value  = p.nivel||'';
+
+  document.getElementById('bless-char-grid').innerHTML = buildCharGrid(alreadyIn, p.nome||'');
+
+  // Pre-select if editing
+  if (p.nome) {
+    const card = document.querySelector('#bless-char-grid [data-nome="' + p.nome.replace(/"/g,'\\"') + '"]');
+    if (card) card.classList.add('selected');
+  }
   document.getElementById('bless-part-modal').classList.add('open');
-  setTimeout(()=>document.getElementById('bless-part-nome').focus(),80);
 };
-window.closeBlessPartModal = function() { document.getElementById('bless-part-modal').classList.remove('open'); };
+
+window.closeBlessPartModal = function() {
+  document.getElementById('bless-part-modal').classList.remove('open');
+};
+
 window.saveBlessPart = async function() {
-  if (!isAdmin()) return;
-  const nome   = (document.getElementById('bless-part-nome').value||'').trim();
-  const status = document.getElementById('bless-part-status').value||'a-confirmar';
+  if (!currentUser) return;
+  const nome   = (document.getElementById('bless-part-selected-char').value||'').trim();
+  const userId = document.getElementById('bless-part-selected-userId').value;
+  const classe = document.getElementById('bless-part-selected-classe').value;
+  const nivel  = document.getElementById('bless-part-selected-nivel').value;
   const editId = document.getElementById('bless-part-editing-id').value;
-  if (!nome) { toast('Digite o nome do personagem','error'); return; }
-  const id = editId||Date.now().toString();
-  if (db) await dbSet('bless/'+_blessTag+'/participantes/'+id, {nome,status});
-  else { if(!blessData[_blessTag].participantes) blessData[_blessTag].participantes={}; blessData[_blessTag].participantes[id]={nome,status}; renderBless(); }
+  const isFalta = _blessListType === 'faltas';
+
+  if (!nome) { toast('Selecione um personagem', 'error'); return; }
+  if (!isAdmin() && userId !== currentUser.id) {
+    toast('Você só pode adicionar seus próprios personagens', 'error'); return;
+  }
+
+  const status = isFalta ? undefined : (document.getElementById('bless-part-status').value||'a-confirmar');
+  const entry  = isFalta ? {nome,classe,nivel,userId} : {nome,classe,nivel,userId,status};
+
+  const id = editId || Date.now().toString();
+  if (db) await dbSet('bless/'+_blessTag+'/'+_blessListType+'/'+id, entry);
+  else {
+    if (!blessData[_blessTag][_blessListType]) blessData[_blessTag][_blessListType] = {};
+    blessData[_blessTag][_blessListType][id] = entry;
+    renderBless();
+  }
   closeBlessPartModal();
-  toast(editId?'Atualizado!':'Adicionado!','success');
+  toast(editId ? 'Atualizado!' : 'Adicionado!', 'success');
 };
+
 window.updateBlessPartStatus = async function(id, status) {
   if (!isAdmin()) return;
-  const p = blessTagData().participantes[id]; if(!p) return;
-  if (db) await dbSet('bless/'+_blessTag+'/participantes/'+id, {...p,status});
-  else { blessData[_blessTag].participantes[id]={...p,status}; renderBless(); }
+  const p = (blessTagData().participantes||{})[id]; if (!p) return;
+  if (db) await dbSet('bless/'+_blessTag+'/participantes/'+id, {...p, status});
+  else { blessData[_blessTag].participantes[id] = {...p, status}; renderBless(); }
 };
-window.deleteBlessPart = function(id) {
-  if (!isAdmin()) return;
-  const p = blessTagData().participantes[id]||{};
-  confirm2(`Remover <strong>${esc(p.nome||'participante')}</strong> da lista?`, async()=>{
-    if(db) await dbRemove('bless/'+_blessTag+'/participantes/'+id);
-    else { delete blessData[_blessTag].participantes[id]; renderBless(); }
-    toast('Removido.','success');
+
+window.deleteBlessList = function(listType, id) {
+  if (!currentUser) return;
+  const list = blessTagData()[listType] || {};
+  const p    = list[id] || {};
+  if (!isAdmin() && p.userId !== currentUser.id) {
+    toast('Você não tem permissão para remover este personagem', 'error'); return;
+  }
+  confirm2(`Remover <strong>${esc(p.nome||'personagem')}</strong> da lista?`, async () => {
+    if (db) await dbRemove('bless/'+_blessTag+'/'+listType+'/'+id);
+    else { delete blessData[_blessTag][listType][id]; renderBless(); }
+    toast('Removido.', 'success');
   });
 };
+
+// backward compat
+window.deleteBlessPart = function(id) { deleteBlessList('participantes', id); };
+
 window.openBlessGrupoModal = function(id) {
   if (!isAdmin()) return;
   _blessGrupoId = id;
@@ -2084,14 +2248,14 @@ window.openBlessGrupoModal = function(id) {
   document.getElementById('bless-grupo-nome').value = g.nome||'';
   const inp = document.getElementById('bless-grupo-members');
   inp.innerHTML = '';
-  for (let i=0; i<6; i++) {
+  for (let i = 0; i < 6; i++) {
     const row = document.createElement('div');
     row.className = 'grupo-member-input-row';
     row.innerHTML = `<span>${i+1}.</span><input class="form-input" placeholder="Personagem ${i+1} (opcional)" value="${esc(membros[i]||'')}" style="flex:1"/>`;
     inp.appendChild(row);
   }
   document.getElementById('bless-grupo-modal').classList.add('open');
-  setTimeout(()=>document.getElementById('bless-grupo-nome').focus(),80);
+  setTimeout(() => document.getElementById('bless-grupo-nome').focus(), 80);
 };
 window.closeBlessGrupoModal = function() { document.getElementById('bless-grupo-modal').classList.remove('open'); };
 window.saveBlessGrupo = async function() {
@@ -2099,22 +2263,27 @@ window.saveBlessGrupo = async function() {
   const nome = (document.getElementById('bless-grupo-nome').value||'').trim();
   if (!nome) { toast('Digite o nome do grupo','error'); return; }
   const inputs = document.querySelectorAll('#bless-grupo-members input');
-  const membros = Array.from(inputs).map(i=>i.value.trim()).filter(Boolean);
-  const id = _blessGrupoId||Date.now().toString();
+  const membros = Array.from(inputs).map(i => i.value.trim()).filter(Boolean);
+  const id = _blessGrupoId || Date.now().toString();
   if (db) await dbSet('bless/'+_blessTag+'/grupos/'+id, {nome,membros});
-  else { if(!blessData[_blessTag].grupos) blessData[_blessTag].grupos={}; blessData[_blessTag].grupos[id]={nome,membros}; renderBless(); }
+  else {
+    if (!blessData[_blessTag].grupos) blessData[_blessTag].grupos = {};
+    blessData[_blessTag].grupos[id] = {nome,membros};
+    renderBless();
+  }
   closeBlessGrupoModal();
-  toast(_blessGrupoId?'Grupo atualizado!':'Grupo criado!','success');
+  toast(_blessGrupoId ? 'Grupo atualizado!' : 'Grupo criado!', 'success');
 };
 window.deleteBlessGrupo = function(id) {
   if (!isAdmin()) return;
   const g = blessTagData().grupos[id]||{};
-  confirm2(`Excluir o grupo <strong>${esc(g.nome||'')}</strong>?`, async()=>{
-    if(db) await dbRemove('bless/'+_blessTag+'/grupos/'+id);
+  confirm2(`Excluir o grupo <strong>${esc(g.nome||'')}</strong>?`, async () => {
+    if (db) await dbRemove('bless/'+_blessTag+'/grupos/'+id);
     else { delete blessData[_blessTag].grupos[id]; renderBless(); }
-    toast('Grupo removido.','success');
+    toast('Grupo removido.', 'success');
   });
 };
+
 
 // ─────────────────────────────────────────────────────────
 //  SERVER IFRAME
