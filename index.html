@@ -1019,8 +1019,10 @@ tbody tr:hover { background: rgba(201,162,39,0.04); }
   <div class="bless-modal-box">
     <div class="bless-modal-title" id="bless-part-modal-title">Participante</div>
     <div class="form-group">
-      <label class="form-label">Selecione o personagem</label>
-      <div class="char-selector-grid" id="bless-char-grid"></div>
+      <label class="form-label">Personagem</label>
+      <select class="form-select" id="bless-char-select" onchange="onBlessCharSelect(this)">
+        <option value="">— Selecione um personagem —</option>
+      </select>
       <input type="hidden" id="bless-part-selected-char"/>
       <input type="hidden" id="bless-part-selected-userId"/>
       <input type="hidden" id="bless-part-selected-classe"/>
@@ -1964,14 +1966,20 @@ function getMyChars() {
   return ps.filter(p => p && p.personagem);
 }
 
-function buildCharGrid(alreadyIn, editingNome) {
+function buildCharOptions(alreadyIn, editingNome) {
   const adm     = isAdmin();
   const myChars = getMyChars();
   const myNames = new Set(myChars.map(c => c.personagem));
   let chars = [];
 
   if (adm) {
-    users.filter(u => u.status === 'ativo').forEach(u => {
+    // Próprios personagens primeiro, depois os demais ordenados por nome do usuário
+    const myUserId = currentUser?.id;
+    users.filter(u => u.status === 'ativo').sort((a, b) => {
+      if (a.id === myUserId) return -1;
+      if (b.id === myUserId) return  1;
+      return (a.nome||'').localeCompare(b.nome||'');
+    }).forEach(u => {
       const ps = Array.isArray(u.personagens) ? u.personagens
                : (u.personagem ? [{personagem:u.personagem,classe:u.classe||'',nivel:u.nivel||''}] : []);
       ps.filter(p => p && p.personagem).forEach(p => {
@@ -1986,39 +1994,55 @@ function buildCharGrid(alreadyIn, editingNome) {
     }));
   }
 
-  // Filter out already-added chars (but keep the one being edited)
-  chars = chars.filter(c => !alreadyIn.has(c.nome) || c.nome === editingNome);
-
-  if (!chars.length) {
-    return '<div style="color:var(--text-dim);font-size:0.85rem;padding:0.5rem 0">Nenhum personagem disponível para adicionar.</div>';
-  }
-
-  return chars.map(c => {
-    const cls = 'char-selector-card' + (c.isOwn ? ' own' : '');
-    const ownerLine = adm
-      ? (c.isOwn
-          ? '<div class="cs-owner">⭐ Seu personagem</div>'
-          : `<div class="cs-owner">👤 ${esc(c.userName)}</div>`)
-      : '';
-    const safeNome  = c.nome.replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-    const safeClass = c.classe.replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-    const safeNivel = (c.nivel||'').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-    const safeUID   = c.userId.replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-    return `<div class="${cls}" onclick="selectBlessChar(this,'${safeNome}','${safeUID}','${safeClass}','${safeNivel}')" data-nome="${esc(c.nome)}">
-      <div class="cs-name">${esc(c.nome)}</div>
-      <div class="cs-info">${esc(c.classe)}${c.nivel?' · Nv '+esc(c.nivel):''}</div>
-      ${ownerLine}
-    </div>`;
-  }).join('');
+  // Filtra os já cadastrados (exceto o que está sendo editado)
+  return chars.filter(c => !alreadyIn.has(c.nome) || c.nome === editingNome);
 }
 
-window.selectBlessChar = function(el, nome, userId, classe, nivel) {
-  document.querySelectorAll('#bless-char-grid .char-selector-card').forEach(c => c.classList.remove('selected'));
-  el.classList.add('selected');
-  document.getElementById('bless-part-selected-char').value   = nome;
-  document.getElementById('bless-part-selected-userId').value = userId;
-  document.getElementById('bless-part-selected-classe').value = classe;
-  document.getElementById('bless-part-selected-nivel').value  = nivel;
+function populateBlessCharSelect(alreadyIn, editingNome) {
+  const sel   = document.getElementById('bless-char-select');
+  const adm   = isAdmin();
+  const chars = buildCharOptions(alreadyIn, editingNome);
+
+  sel.innerHTML = '<option value="">— Selecione um personagem —</option>';
+
+  if (!chars.length) {
+    const opt = document.createElement('option');
+    opt.disabled = true;
+    opt.textContent = 'Nenhum personagem disponível para adicionar';
+    sel.appendChild(opt);
+    // Limpa campos ocultos
+    onBlessCharSelect(sel);
+    return;
+  }
+
+  chars.forEach(c => {
+    const opt  = document.createElement('option');
+    opt.value  = JSON.stringify({nome:c.nome, userId:c.userId, classe:c.classe, nivel:c.nivel||''});
+    const info = c.nome + (c.classe ? ' · ' + c.classe : '') + (c.nivel ? ' (Nv ' + c.nivel + ')' : '');
+    opt.textContent = adm
+      ? (c.isOwn ? '⭐ ' + info : '👤 ' + info + ' — ' + c.userName)
+      : info;
+    if (c.nome === editingNome) opt.selected = true;
+    sel.appendChild(opt);
+  });
+
+  onBlessCharSelect(sel);
+}
+
+window.onBlessCharSelect = function(sel) {
+  const fields = ['bless-part-selected-char','bless-part-selected-userId',
+                  'bless-part-selected-classe','bless-part-selected-nivel'];
+  if (!sel.value) {
+    fields.forEach(id => { document.getElementById(id).value = ''; });
+    return;
+  }
+  try {
+    const c = JSON.parse(sel.value);
+    document.getElementById('bless-part-selected-char').value   = c.nome   || '';
+    document.getElementById('bless-part-selected-userId').value = c.userId || '';
+    document.getElementById('bless-part-selected-classe').value = c.classe || '';
+    document.getElementById('bless-part-selected-nivel').value  = c.nivel  || '';
+  } catch(e) {}
 };
 
 function renderBless() {
@@ -2173,13 +2197,7 @@ window.openBlessPartModal = function(id, listType) {
   document.getElementById('bless-part-selected-classe').value = p.classe||'';
   document.getElementById('bless-part-selected-nivel').value  = p.nivel||'';
 
-  document.getElementById('bless-char-grid').innerHTML = buildCharGrid(alreadyIn, p.nome||'');
-
-  // Pre-select if editing
-  if (p.nome) {
-    const card = document.querySelector('#bless-char-grid [data-nome="' + p.nome.replace(/"/g,'\\"') + '"]');
-    if (card) card.classList.add('selected');
-  }
+  populateBlessCharSelect(alreadyIn, p.nome||'');
   document.getElementById('bless-part-modal').classList.add('open');
 };
 
